@@ -59,6 +59,7 @@ class CustomUser(AbstractUser):
     class Meta:
         ordering = ["first_name", "last_name", "email"]
 
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["first_name"]
 
