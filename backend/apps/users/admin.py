@@ -1,7 +1,10 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.shortcuts import render
 
+from apps.users.forms import ActivatePremiumForm
 from apps.users.models import CustomUser
+from apps.users.services import activate_premium, PremiumServiceError
 
 
 @admin.register(CustomUser)
@@ -33,3 +36,41 @@ class CustomUserAdmin(BaseUserAdmin):
         }),
     )
     readonly_fields = ('last_login', 'date_joined')
+
+    actions = ['activate_premium_action']
+
+    @admin.action(description="Activate/renew premium for selected users")
+    def activate_premium_action(self, request, queryset):
+        if 'apply' in request.POST:
+            form = ActivatePremiumForm(request.POST)
+            if form.is_valid():
+                days = form.cleaned_data['days']
+                succeeded = 0
+                errors = []
+
+                for user in queryset:
+                    try:
+                        activate_premium(user, days=days)
+                        succeeded += 1
+                    except PremiumServiceError as exc:
+                        errors.append(f"{user.email}: {exc}")
+
+                if succeeded:
+                    self.message_user(
+                        request,
+                        f"Activated/renewed premium for {succeeded} user(s).",
+                        level=messages.SUCCESS,
+                    )
+                for error in errors:
+                    self.message_user(request, error, level=messages.ERROR)
+                return None
+        else:
+            form = ActivatePremiumForm(
+                initial={'_selected_action': queryset.values_list('pk', flat=True)}
+            )
+
+        return render(
+            request,
+            'admin/users/activate_premium.html',
+            context={'users': queryset, 'form': form, 'opts': self.model._meta},
+        )

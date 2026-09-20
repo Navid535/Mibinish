@@ -1,0 +1,16 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<form method="post">
+  {% csrf_token %}
+  <p>Activate/renew premium for the following user(s):</p>
+  <ul>
+    {% for user in users %}
+      <li>{{ user.email }} — current plan: {{ user.plan }}{% if user.premium_until %} (until {{ user.premium_until }}){% endif %}</li>
+    {% endfor %}
+  </ul>
+  {{ form.as_p }}
+  <input type="hidden" name="action" value="activate_premium_action">
+  <input type="submit" name="apply" value="Activate">
+</form>
+{% endblock %}
