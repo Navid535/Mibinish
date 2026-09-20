@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 from django.test import TestCase
+from django.utils import timezone
 
 from apps.users.models import CustomUser
 from apps.users.serializers import RegisterSerializer, UserSerializer, ChangePasswordSerializer
@@ -224,3 +227,49 @@ class ChangePasswordSerializerTests(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertIn("new_password", serializer.errors)
 
+    def test_free_user_cannot_change_retention_days(self):
+        self.user.plan = "FR"
+        self.user.premium_until = None
+        self.user.save(update_fields=["plan", "premium_until"])
+        serializer = UserSerializer(self.user, data={"completed_items_retention_days": 30}, partial=True, )
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("completed_items_retention_days", serializer.errors, )
+
+    def test_active_premium_user_can_change_retention_days(self):
+        self.user.plan = "PR"
+        self.user.premium_until = timezone.localdate() + timedelta(days=30)
+        self.user.save(update_fields=["plan", "premium_until"])
+        serializer = UserSerializer(self.user, data={"completed_items_retention_days": 30}, partial=True, )
+        self.assertTrue(serializer.is_valid())
+
+    def test_expired_premium_user_cannot_change_retention_days(self):
+        self.user.plan = "PR"
+        self.user.premium_until = timezone.localdate() - timedelta(days=1)
+        self.user.save(update_fields=["plan", "premium_until"])
+        serializer = UserSerializer(self.user, data={"completed_items_retention_days": 30}, partial=True, )
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("completed_items_retention_days", serializer.errors, )
+
+    def test_retention_days_must_be_between_1_and_31(self):
+        self.user.plan = "PR"
+        self.user.premium_until = timezone.localdate() + timedelta(days=30)
+        self.user.save(update_fields=["plan", "premium_until"])
+
+        for value in (0, 32):
+            with self.subTest(value=value):
+                serializer = UserSerializer(
+                    self.user,
+                    data={"completed_items_retention_days": value},
+                    partial=True,
+                )
+                self.assertFalse(serializer.is_valid())
+                self.assertIn("completed_items_retention_days", serializer.errors)
+
+    def test_premium_expiring_today_can_still_change_retention_days(self):
+        self.user.plan = "PR"
+        self.user.premium_until = timezone.localdate()
+        self.user.save(update_fields=["plan", "premium_until"])
+        serializer = UserSerializer(
+            self.user, data={"completed_items_retention_days": 30}, partial=True,
+        )
+        self.assertTrue(serializer.is_valid(), serializer.errors)

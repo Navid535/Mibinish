@@ -1,7 +1,6 @@
-from datetime import datetime
-
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.users.models import CustomUser as User
@@ -19,8 +18,22 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def validate_completed_items_retention_days(self, value):
-        if not (1 <= value <= 21):
-            raise serializers.ValidationError("Retention days must be between 1 and 21")
+        user = self.instance
+        if user is not None:
+            today = timezone.localdate()
+            has_active_premium = (
+                    user.plan == "PR"
+                    and user.premium_until is not None
+                    and user.premium_until >= today
+            )
+            if not has_active_premium:
+                raise serializers.ValidationError(
+                    "Only active premium users can change retention days."
+                )
+
+        if not (1 <= value <= 31):
+            raise serializers.ValidationError("Retention days must be between 1 and 31")
+
         return value
 
 

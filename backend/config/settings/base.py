@@ -138,4 +138,8 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.users.tasks.expire_premium_users",
         "schedule": crontab(hour=0, minute=0),
     },
+    "purge-expired-completed-items-daily": {
+        "task": "apps.saved_items.tasks.purge_expired_completed_items",
+        "schedule": crontab(hour=0, minute=30),
+    },
 }
