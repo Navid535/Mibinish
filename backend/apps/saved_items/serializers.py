@@ -48,10 +48,13 @@ class SavedItemSerializer(serializers.ModelSerializer):
             'status', 'completed_at',
             'categories',
             'created_at', 'updated_at',
+            'extraction_status',
+            'extraction_error',
         )
         read_only_fields = (
-            'extracted_content', 'metadata',
+            'extracted_content', 'metadata', 'source',
             'completed_at', 'created_at', 'updated_at',
+            'extraction_status', 'extraction_error',
         )
 
     def validate(self, attrs):

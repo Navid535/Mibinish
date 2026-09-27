@@ -1,3 +1,5 @@
+import uuid
+
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -42,6 +44,13 @@ class SavedItem(models.Model):
         TO_DO = "to_do", "To Do"
         COMPLETED = "completed", "Completed"
 
+    class ExtractionStatus(models.TextChoices):
+        PENDING = "pending", "Pending"
+        PROCESSING = "processing", "Processing"
+        DONE = "done", "Done"
+        FAILED = "failed", "Failed"
+        NO_URL = "no_url", "No URL"
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='saved_items', on_delete=models.CASCADE)
     categories = models.ManyToManyField(
         Category,
@@ -51,8 +60,13 @@ class SavedItem(models.Model):
     name = models.CharField(max_length=255, null=True, blank=True)
     url = models.URLField(max_length=500, null=True, blank=True)
     source = models.CharField(max_length=50, blank=True)
+
     extracted_content = models.JSONField(null=True, blank=True)
     metadata = models.JSONField(null=True, blank=True)
+    extraction_status = models.CharField(max_length=20, choices=ExtractionStatus.choices, default=ExtractionStatus.PENDING)
+    extraction_error = models.TextField(null=True, blank=True)
+    extraction_version = models.UUIDField(default=uuid.uuid4, editable=False)
+
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.TO_DO)
     completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -3,6 +3,7 @@ from datetime import timedelta
 from celery import shared_task
 from django.utils import timezone
 
+from apps.saved_items.extraction.pipeline import run_extraction
 from apps.saved_items.models import SavedItem
 from apps.users.models import CustomUser
 
@@ -31,3 +32,14 @@ def purge_expired_completed_items() -> int:
         total_deleted += deleted_count
 
     return total_deleted
+
+
+@shared_task(
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
+    max_retries=3,
+)
+def extract_content_task(saved_item_id: int, expected_version: str) -> None:
+    run_extraction(saved_item_id, expected_version)

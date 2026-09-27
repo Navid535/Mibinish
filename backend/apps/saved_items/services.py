@@ -1,16 +1,30 @@
+import uuid
+import logging
+
 from django.db import transaction
 from django.utils import timezone
 
+from apps.saved_items.extraction.parser import derive_source
 from apps.saved_items.models import SavedItem, SavedItemCategory
 
+logger = logging.getLogger(__name__)
 
 @transaction.atomic
 def create_saved_item(*, user, category_links=None, **fields):
+    if not fields.get('url'):
+        fields['extraction_status'] = SavedItem.ExtractionStatus.NO_URL
+    else:
+        fields['source'] = derive_source(fields['url'])
+
     status = fields.get('status', SavedItem.Status.TO_DO)
     fields['completed_at'] = timezone.now() if status == SavedItem.Status.COMPLETED else None
 
     saved_item = SavedItem.objects.create(user=user, **fields)
     _sync_categories(saved_item, category_links or [])
+
+    if saved_item.url:
+        _queue_extraction(saved_item)
+
     return saved_item
 
 
@@ -21,6 +35,19 @@ def update_saved_item(*, saved_item, category_links=None, **fields):
             timezone.now() if fields['status'] == SavedItem.Status.COMPLETED else None
         )
 
+    url_changed = 'url' in fields and fields['url'] != saved_item.url
+    if url_changed:
+        fields['extraction_version'] = uuid.uuid4()
+        if fields['url']:
+            fields['source'] = derive_source(fields['url'])
+            fields['extraction_status'] = SavedItem.ExtractionStatus.PENDING
+        else:
+            fields['source'] = ''
+            fields['extraction_status'] = SavedItem.ExtractionStatus.NO_URL
+        fields['extracted_content'] = None
+        fields['metadata'] = None
+        fields['extraction_error'] = None
+
     for field, value in fields.items():
         setattr(saved_item, field, value)
     saved_item.save()
@@ -28,8 +55,32 @@ def update_saved_item(*, saved_item, category_links=None, **fields):
     if category_links is not None:
         _sync_categories(saved_item, category_links)
 
+    if url_changed and saved_item.url:
+        _queue_extraction(saved_item)
+
     return saved_item
 
+
+def _queue_extraction(saved_item):
+    from apps.saved_items.tasks import extract_content_task
+
+    version = str(saved_item.extraction_version)
+
+    def _delay():
+        try:
+            extract_content_task.delay(saved_item.id, version)
+        except Exception:  # noqa: BLE001 - قطعی broker نباید هیچ‌جا رو بترکونه
+            logger.exception(
+                "Failed to queue extraction task for SavedItem %s", saved_item.id
+            )
+            SavedItem.objects.filter(
+                pk=saved_item.id, extraction_version=version,
+            ).update(
+                extraction_status=SavedItem.ExtractionStatus.FAILED,
+                extraction_error="Could not queue extraction task (broker unavailable)",
+            )
+
+    transaction.on_commit(_delay)
 
 def _sync_categories(saved_item, category_links):
     saved_item.category_links.all().delete()
