@@ -16,6 +16,8 @@ ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 
 
 INSTALLED_APPS = [
+    "unfold",
+
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -27,6 +29,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "django_celery_beat",
     "django_filters",
+    "drf_spectacular",
 
     "apps.users",
     "apps.saved_items"
@@ -119,6 +122,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.StandardPagination",
     "PAGE_SIZE": 20,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 SIMPLE_JWT = {
@@ -145,4 +149,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.saved_items.tasks.purge_expired_completed_items",
         "schedule": crontab(hour=0, minute=30),
     },
+}
+
+UNFOLD = {
+    "SITE_TITLE": "Keeply Admin",
+    "SITE_HEADER": "Keeply",
+    "SITE_URL": "/",
 }

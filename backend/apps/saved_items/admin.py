@@ -20,10 +20,10 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(SavedItem)
 class SavedItemAdmin(admin.ModelAdmin):
     list_display = (
-        'name', 'user', 'status', 'source', 'created_at', 'category_list',
+        'name', 'user', 'status', 'source', 'created_at', 'category_list', "extraction_status",
     )
     search_fields = ('name', 'categories__name', 'url', 'source')
-    list_filter = ('status', 'source')
+    list_filter = ('status', 'source', 'extraction_status')
     ordering = ('-created_at',)
     list_select_related = ('user',)
     inlines = (SavedItemCategoryInline,)
@@ -31,6 +31,19 @@ class SavedItemAdmin(admin.ModelAdmin):
     def category_list(self, obj):
         return ", ".join(c.name for c in obj.categories.all())
     category_list.short_description = "Categories"
+
+    def save_model(self, request, obj, form, change):
+        url_changed = (not change) or ('url' in form.changed_data)
+        if url_changed:
+            if obj.url:
+                obj.source = derive_source(obj.url)
+                obj.extraction_status = SavedItem.ExtractionStatus.PENDING
+            else:
+                obj.source = ''
+                obj.extraction_status = SavedItem.ExtractionStatus.NO_URL
+        super().save_model(request, obj, form, change)
+        if url_changed and obj.url:
+            _queue_extraction(obj)
 
 
 @admin.register(SavedItemCategory)
