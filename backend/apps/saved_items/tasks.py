@@ -30,7 +30,7 @@ def purge_expired_completed_items() -> int:
         deleted_count = queryset.count()
         queryset.delete()
         total_deleted += deleted_count
-
+    logger.info(f"Purged {total_deleted} items")
     return total_deleted
 
 

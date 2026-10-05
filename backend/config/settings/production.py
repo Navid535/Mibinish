@@ -1,4 +1,9 @@
 import environ
+import sentry_sdk
+
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.celery import CeleryIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 from .base import *  # noqa: F403
 
@@ -11,6 +16,7 @@ ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 DATABASES = {
     "default": env.db(),
 }
+DATABASES["default"]["CONN_MAX_AGE"] = 60
 
 # ---------------------------------------------------------------------
 # HTTPS / امنیت شبکه
@@ -38,10 +44,6 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS
 SECURE_HSTS_PRELOAD = False  # فقط بعد از اطمینان کامل از HTTPS فعالش کن
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
-
-# INSTALLED_APPS += ["corsheaders"]
-# MIDDLEWARE.insert(0, "corsheaders.middleware.CorsMiddleware") # باید اول از همه باشه
-# CORS_ALLOWED_ORIGINS = env.list("DJANGO_CORS_ALLOWED_ORIGINS", default=[])
 
 # Static files (Whitenoise)
 MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")  # بعد از SecurityMiddleware
@@ -93,3 +95,18 @@ EMAIL_HOST_USER = env("DJANGO_EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("DJANGO_EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = env.bool("DJANGO_EMAIL_USE_TLS", default=True)
 SERVER_EMAIL = env("DJANGO_SERVER_EMAIL", default="noreply@example.com")
+
+
+sentry_logging = LoggingIntegration(
+    level=None,
+    event_level="ERROR",
+)
+
+SENTRY_DSN = env("DJANGO_SENTRY_DSN", default="")
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration(), CeleryIntegration()],
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+    )
