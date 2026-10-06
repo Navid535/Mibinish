@@ -62,6 +62,7 @@ class ChangePasswordView(UpdateAPIView):
 
 class LogoutView(APIView):
     permission_classes = (IsAuthenticated,)
+    serializer_class = None
 
     def post(self, request):
         refresh_token = request.data.get("refresh")
