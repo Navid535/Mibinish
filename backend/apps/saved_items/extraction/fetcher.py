@@ -14,7 +14,7 @@ MAX_CONTENT_BYTES = 5 * 1024 * 1024  # 5 MB
 MAX_REDIRECTS = 5
 CHUNK_SIZE = 64 * 1024
 
-USER_AGENT = "KeeplyBot/1.0 (+https://keeply.example.com/bot)"
+USER_AGENT = "MibinishBot/1.0 (+https://mibinish.navid535.ir/bot)"
 
 
 class FetchError(Exception):

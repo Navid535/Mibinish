@@ -162,7 +162,7 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 UNFOLD = {
-    "SITE_TITLE": "Keeply Admin",
-    "SITE_HEADER": "Keeply",
+    "SITE_TITLE": "Mibinish Admin",
+    "SITE_HEADER": "Mibinish",
     "SITE_URL": "/",
 }

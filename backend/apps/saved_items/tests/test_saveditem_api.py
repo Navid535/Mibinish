@@ -385,7 +385,7 @@ class SavedItemAPITests(APITestCase):
         with self.captureOnCommitCallbacks(execute=True):
             response = self.create_item(name="Resilience test", url="https://example.com/x")
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)  # نه ۵۰۰!
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         item = SavedItem.objects.get(pk=response.data["id"])
         self.assertEqual(item.extraction_status, SavedItem.ExtractionStatus.FAILED)

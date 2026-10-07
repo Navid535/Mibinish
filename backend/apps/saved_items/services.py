@@ -3,14 +3,39 @@ import logging
 
 from django.db import transaction
 from django.utils import timezone
+from rest_framework.exceptions import ValidationError
+
 
 from apps.saved_items.extraction.parser import derive_source
 from apps.saved_items.models import SavedItem, SavedItemCategory
 
 logger = logging.getLogger(__name__)
 
+
+FREE_ITEM_LIMIT = 100
+PREMIUM_ITEM_LIMIT = 500
+
+
+def _get_item_limit(user):
+    if user.plan == "PR":
+        return PREMIUM_ITEM_LIMIT
+
+    return FREE_ITEM_LIMIT
+
+
+def _check_item_limit(user):
+    item_limit = _get_item_limit(user)
+    item_count = user.saved_items.count()
+
+    if item_count >= item_limit:
+        raise ValidationError(
+            f"You have reached your limit of {item_limit} saved items."
+        )
+
 @transaction.atomic
 def create_saved_item(*, user, category_links=None, **fields):
+    _check_item_limit(user)
+
     if not fields.get('url'):
         fields['extraction_status'] = SavedItem.ExtractionStatus.NO_URL
     else:
@@ -69,7 +94,7 @@ def _queue_extraction(saved_item):
     def _delay():
         try:
             extract_content_task.delay(saved_item.id, version)
-        except Exception:  # noqa: BLE001 - قطعی broker نباید هیچ‌جا رو بترکونه
+        except Exception:  # noqa: BLE001
             logger.exception(
                 "Failed to queue extraction task for SavedItem %s", saved_item.id
             )
