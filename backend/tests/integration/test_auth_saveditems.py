@@ -2,23 +2,19 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.saved_items.models import SavedItem
 from apps.users.models import CustomUser
 
 
 class AuthSavedItemsIntegrationTests(APITestCase):
-    """
-    این‌جا عمداً از force_authenticate استفاده نمی‌کنیم — هدف اینه که کل
-    زنجیره‌ی واقعی (صدور JWT از auth app → استفاده‌ی همون توکن روی
-    ویوهای saved_items app) رو با هم تست کنیم، نه هر کدوم جدا.
-    """
-
     def _register_and_get_tokens(self, email="user1@example.com"):
-        response = self.client.post(reverse('register'), {
-            "email": email,
-            "first_name": "Navid",
-            "password": "SomeStrongPass123!",
-        })
+        response = self.client.post(
+            reverse("register"),
+            {
+                "email": email,
+                "first_name": "Navid",
+                "password": "SomeStrongPass123!",
+            },
+        )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         return response.data["access"], response.data["refresh"]
 
@@ -29,7 +25,7 @@ class AuthSavedItemsIntegrationTests(APITestCase):
         access_token, _ = self._register_and_get_tokens()
 
         create_response = self.client.post(
-            reverse('saved-item-list'),
+            reverse("saved-item-list"),
             {"name": "First bookmark", "url": "https://example.com/article"},
             format="json",
             **self._auth_header(access_token),
@@ -37,7 +33,8 @@ class AuthSavedItemsIntegrationTests(APITestCase):
         self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
 
         list_response = self.client.get(
-            reverse('saved-item-list'), **self._auth_header(access_token),
+            reverse("saved-item-list"),
+            **self._auth_header(access_token),
         )
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
         names = [item["name"] for item in list_response.data["results"]]
@@ -50,35 +47,43 @@ class AuthSavedItemsIntegrationTests(APITestCase):
             first_name="Existing",
         )
 
-        login_response = self.client.post(reverse('token_obtain_pair'), {
-            "email": "existing@example.com",
-            "password": "SomeStrongPass123!",
-        })
+        login_response = self.client.post(
+            reverse("token_obtain_pair"),
+            {
+                "email": "existing@example.com",
+                "password": "SomeStrongPass123!",
+            },
+        )
         self.assertEqual(login_response.status_code, status.HTTP_200_OK)
         access_token = login_response.data["access"]
 
         response = self.client.get(
-            reverse('saved-item-list'), **self._auth_header(access_token),
+            reverse("saved-item-list"),
+            **self._auth_header(access_token),
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_refresh_token_produces_a_working_access_token(self):
         _, refresh_token = self._register_and_get_tokens()
 
-        refresh_response = self.client.post(reverse('token_refresh'), {
-            "refresh": refresh_token,
-        })
+        refresh_response = self.client.post(
+            reverse("token_refresh"),
+            {
+                "refresh": refresh_token,
+            },
+        )
         self.assertEqual(refresh_response.status_code, status.HTTP_200_OK)
         new_access_token = refresh_response.data["access"]
 
         response = self.client.get(
-            reverse('saved-item-list'), **self._auth_header(new_access_token),
+            reverse("saved-item-list"),
+            **self._auth_header(new_access_token),
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_invalid_token_is_rejected_on_saved_items(self):
         response = self.client.get(
-            reverse('saved-item-list'),
+            reverse("saved-item-list"),
             HTTP_AUTHORIZATION="Bearer this.is.not.a.valid.token",
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -88,14 +93,15 @@ class AuthSavedItemsIntegrationTests(APITestCase):
         access_token_2, _ = self._register_and_get_tokens(email="user2@example.com")
 
         self.client.post(
-            reverse('saved-item-list'),
+            reverse("saved-item-list"),
             {"name": "User1's item", "url": "https://example.com/1"},
             format="json",
             **self._auth_header(access_token_1),
         )
 
         response = self.client.get(
-            reverse('saved-item-list'), **self._auth_header(access_token_2),
+            reverse("saved-item-list"),
+            **self._auth_header(access_token_2),
         )
         names = [item["name"] for item in response.data["results"]]
         self.assertNotIn("User1's item", names)

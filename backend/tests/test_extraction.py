@@ -14,13 +14,11 @@ from apps.users.models import CustomUser
 
 def create_user(email="user1@example.com"):
     return CustomUser.objects.create_user(
-        email=email, password="strong-pass-123", first_name="Test",
+        email=email,
+        password="strong-pass-123",
+        first_name="Test",
     )
 
-
-# ---------------------------------------------------------------------
-# security.py
-# ---------------------------------------------------------------------
 
 class SecurityTests(TestCase):
     @patch("apps.saved_items.extraction.security.socket.getaddrinfo")
@@ -42,7 +40,9 @@ class SecurityTests(TestCase):
 
     @patch("apps.saved_items.extraction.security.socket.getaddrinfo")
     def test_link_local_ip_is_rejected(self, mock_getaddrinfo):
-        mock_getaddrinfo.return_value = [(None, None, None, None, ("169.254.169.254", 0))]
+        mock_getaddrinfo.return_value = [
+            (None, None, None, None, ("169.254.169.254", 0))
+        ]
         with self.assertRaises(UnsafeURLError):
             assert_url_is_safe("http://169.254.169.254/latest/meta-data/")
 
@@ -53,17 +53,18 @@ class SecurityTests(TestCase):
     @patch("apps.saved_items.extraction.security.socket.getaddrinfo")
     def test_dns_failure_is_rejected(self, mock_getaddrinfo):
         import socket
+
         mock_getaddrinfo.side_effect = socket.gaierror("name resolution failed")
         with self.assertRaises(UnsafeURLError):
             assert_url_is_safe("https://this-does-not-resolve.invalid")
 
 
-# ---------------------------------------------------------------------
-# fetcher.py
-# ---------------------------------------------------------------------
-
-def _mock_response(status_code=200, content_type="text/html; charset=utf-8",
-                    body=b"<html></html>", location=None):
+def _mock_response(
+    status_code=200,
+    content_type="text/html; charset=utf-8",
+    body=b"<html></html>",
+    location=None,
+):
     response = MagicMock()
     response.status_code = status_code
     response.headers = {"Content-Type": content_type}
@@ -99,7 +100,9 @@ class FetcherTests(TestCase):
     @patch("apps.saved_items.extraction.fetcher.assert_url_is_safe")
     @patch("requests.Session.get")
     def test_too_many_redirects_raises_fetch_error(self, mock_get, mock_safe):
-        mock_get.return_value = _mock_response(status_code=302, location="https://example.com/loop")
+        mock_get.return_value = _mock_response(
+            status_code=302, location="https://example.com/loop"
+        )
         with self.assertRaises(FetchError):
             fetch_url("https://example.com/loop")
 
@@ -120,8 +123,11 @@ class FetcherTests(TestCase):
     @patch("requests.Session.get")
     def test_oversized_body_raises_fetch_error(self, mock_get, mock_safe):
         from apps.saved_items.extraction import fetcher as fetcher_module
+
         response = _mock_response()
-        response.iter_content.return_value = [b"x" * (fetcher_module.MAX_CONTENT_BYTES + 1)]
+        response.iter_content.return_value = [
+            b"x" * (fetcher_module.MAX_CONTENT_BYTES + 1)
+        ]
         mock_get.return_value = response
         with self.assertRaises(FetchError):
             fetch_url("https://example.com/huge")
@@ -130,14 +136,11 @@ class FetcherTests(TestCase):
     @patch("requests.Session.get")
     def test_connection_error_raises_fetch_error(self, mock_get, mock_safe):
         import requests
+
         mock_get.side_effect = requests.ConnectionError("boom")
         with self.assertRaises(FetchError):
             fetch_url("https://example.com/down")
 
-
-# ---------------------------------------------------------------------
-# parser.py
-# ---------------------------------------------------------------------
 
 class DeriveSourceTests(TestCase):
     def test_known_domain_maps_to_label(self):
@@ -148,7 +151,10 @@ class DeriveSourceTests(TestCase):
         self.assertEqual(derive_source("https://old.reddit.com/r/django"), "Reddit")
 
     def test_unknown_domain_returns_hostname(self):
-        self.assertEqual(derive_source("https://my-personal-blog.example"), "my-personal-blog.example")
+        self.assertEqual(
+            derive_source("https://my-personal-blog.example"),
+            "my-personal-blog.example",
+        )
 
     def test_www_prefix_is_stripped(self):
         self.assertEqual(derive_source("https://www.example.com/page"), "example.com")
@@ -164,8 +170,11 @@ class ParseFetchResultTests(TestCase):
         </head><body><article><p>Some body text here.</p></article></body></html>
         """
         result = FetchResult(
-            final_url="https://example.com/a", status_code=200,
-            content_type="text/html", charset="utf-8", content=html,
+            final_url="https://example.com/a",
+            status_code=200,
+            content_type="text/html",
+            charset="utf-8",
+            content=html,
         )
         parsed = parse_fetch_result(result)
         self.assertEqual(parsed.metadata["title"], "Cool Article")
@@ -173,8 +182,11 @@ class ParseFetchResultTests(TestCase):
 
     def test_non_html_content_returns_metadata_only(self):
         result = FetchResult(
-            final_url="https://example.com/file.pdf", status_code=200,
-            content_type="application/pdf", charset=None, content=b"%PDF-1.4...",
+            final_url="https://example.com/file.pdf",
+            status_code=200,
+            content_type="application/pdf",
+            charset=None,
+            content=b"%PDF-1.4...",
         )
         parsed = parse_fetch_result(result)
         self.assertEqual(parsed.metadata["content_type"], "application/pdf")
@@ -183,16 +195,15 @@ class ParseFetchResultTests(TestCase):
     def test_malformed_html_does_not_crash(self):
         html = b"<html><body><p>unclosed tag <div>whatever"
         result = FetchResult(
-            final_url="https://example.com/broken", status_code=200,
-            content_type="text/html", charset="utf-8", content=html,
+            final_url="https://example.com/broken",
+            status_code=200,
+            content_type="text/html",
+            charset="utf-8",
+            content=html,
         )
         parsed = parse_fetch_result(result)
         self.assertIsInstance(parsed.metadata, dict)
 
-
-# ---------------------------------------------------------------------
-# pipeline.py — شامل چک نسخه
-# ---------------------------------------------------------------------
 
 class RunExtractionTests(TestCase):
     def setUp(self):
@@ -220,10 +231,15 @@ class RunExtractionTests(TestCase):
 
     @patch("apps.saved_items.extraction.pipeline.parse_fetch_result")
     @patch("apps.saved_items.extraction.pipeline.fetch_url")
-    def test_successful_extraction_marks_done_and_saves_data(self, mock_fetch, mock_parse):
+    def test_successful_extraction_marks_done_and_saves_data(
+        self, mock_fetch, mock_parse
+    ):
         from apps.saved_items.extraction.parser import ParsedContent
+
         mock_fetch.return_value = MagicMock()
-        mock_parse.return_value = ParsedContent(metadata={"title": "Hello"}, body_text="Full body text")
+        mock_parse.return_value = ParsedContent(
+            metadata={"title": "Hello"}, body_text="Full body text"
+        )
         item = SavedItem.objects.create(user=self.user, url="https://example.com")
 
         run_extraction(item.id, str(item.extraction_version))
@@ -238,7 +254,7 @@ class RunExtractionTests(TestCase):
         mock_fetch.side_effect = RuntimeError("totally unexpected bug")
         item = SavedItem.objects.create(user=self.user, url="https://example.com")
 
-        run_extraction(item.id, str(item.extraction_version))  # نباید exception بیرون بده
+        run_extraction(item.id, str(item.extraction_version))
 
         item.refresh_from_db()
         self.assertEqual(item.extraction_status, SavedItem.ExtractionStatus.FAILED)
@@ -247,9 +263,12 @@ class RunExtractionTests(TestCase):
     @patch("apps.saved_items.extraction.pipeline.fetch_url")
     def test_concurrent_field_change_is_not_overwritten(self, mock_fetch, mock_parse):
         from apps.saved_items.extraction.parser import ParsedContent
+
         mock_fetch.return_value = MagicMock()
         mock_parse.return_value = ParsedContent(metadata={"title": "X"}, body_text=None)
-        item = SavedItem.objects.create(user=self.user, url="https://example.com", name="Original")
+        item = SavedItem.objects.create(
+            user=self.user, url="https://example.com", name="Original"
+        )
 
         SavedItem.objects.filter(pk=item.pk).update(name="Changed by user")
 
@@ -260,10 +279,7 @@ class RunExtractionTests(TestCase):
         self.assertEqual(item.extraction_status, SavedItem.ExtractionStatus.DONE)
 
     def test_stale_version_at_start_is_skipped_entirely(self):
-        """
-        شبیه‌سازی: task قدیمی، بعد از این‌که نسخه‌ی آیتم عوض شده، اجرا می‌شه.
-        باید بلافاصله (قبل از هر fetch) skip بشه.
-        """
+
         item = SavedItem.objects.create(user=self.user, url="https://example.com")
         stale_version = str(item.extraction_version)
 
@@ -271,42 +287,33 @@ class RunExtractionTests(TestCase):
 
         with patch("apps.saved_items.extraction.pipeline.fetch_url") as mock_fetch:
             run_extraction(item.id, stale_version)
-            mock_fetch.assert_not_called()  # اصلاً نباید تلاش کنه fetch کنه
+            mock_fetch.assert_not_called()
 
     @patch("apps.saved_items.extraction.pipeline.parse_fetch_result")
     @patch("apps.saved_items.extraction.pipeline.fetch_url")
-    def test_version_change_mid_execution_prevents_final_write(self, mock_fetch, mock_parse):
-        """
-        دقیقاً همون TOCTOU که بحثش کردیم: نسخه در لحظه‌ی شروع درست بود
-        (_mark_processing موفق می‌شه)، ولی *وسط* fetch_url، یه task
-        دیگه (شبیه‌سازی‌شده) نسخه رو عوض می‌کنه. نتیجه‌ی این task باید
-        دور ریخته بشه، نه این‌که رکورد رو overwrite کنه.
-        """
+    def test_version_change_mid_execution_prevents_final_write(
+        self, mock_fetch, mock_parse
+    ):
         from apps.saved_items.extraction.parser import ParsedContent
 
         item = SavedItem.objects.create(user=self.user, url="https://example.com")
         original_version = str(item.extraction_version)
 
         def fetch_side_effect(url):
-            # شبیه‌سازی این‌که وسط fetch، یه update_saved_item دیگه اجرا شده
             SavedItem.objects.filter(pk=item.pk).update(extraction_version=uuid.uuid4())
             return MagicMock()
 
         mock_fetch.side_effect = fetch_side_effect
-        mock_parse.return_value = ParsedContent(metadata={"title": "Should not be saved"}, body_text=None)
+        mock_parse.return_value = ParsedContent(
+            metadata={"title": "Should not be saved"}, body_text=None
+        )
 
         run_extraction(item.id, original_version)
 
         item.refresh_from_db()
-        # _mark_processing قبل از فچ موفق شده بود (نسخه هنوز match بود)،
-        # ولی _mark_done نباید موفق بشه چون نسخه دیگه match نیست
         self.assertEqual(item.extraction_status, SavedItem.ExtractionStatus.PROCESSING)
         self.assertIsNone(item.metadata)
 
-
-# ---------------------------------------------------------------------
-# services.py — lifecycle کامل create/update + queue شدن task
-# ---------------------------------------------------------------------
 
 class CreateSavedItemExtractionLifecycleTests(TestCase):
     def setUp(self):
@@ -330,7 +337,9 @@ class CreateSavedItemExtractionLifecycleTests(TestCase):
         self.assertEqual(len(callbacks), 0)
 
     def test_create_with_url_sets_pending_status_and_source(self):
-        item = services.create_saved_item(user=self.user, url="https://www.instagram.com/p/xyz/")
+        item = services.create_saved_item(
+            user=self.user, url="https://www.instagram.com/p/xyz/"
+        )
         self.assertEqual(item.extraction_status, SavedItem.ExtractionStatus.PENDING)
         self.assertEqual(item.source, "Instagram")
 
@@ -344,7 +353,9 @@ class UpdateSavedItemExtractionLifecycleTests(TestCase):
         original_version = item.extraction_version
 
         with self.captureOnCommitCallbacks(execute=False) as callbacks:
-            updated = services.update_saved_item(saved_item=item, url="https://example.com/b")
+            updated = services.update_saved_item(
+                saved_item=item, url="https://example.com/b"
+            )
 
         self.assertNotEqual(updated.extraction_version, original_version)
         self.assertEqual(updated.source, "example.com")
@@ -363,7 +374,9 @@ class UpdateSavedItemExtractionLifecycleTests(TestCase):
             extraction_status=SavedItem.ExtractionStatus.DONE,
         )
 
-        updated = services.update_saved_item(saved_item=item, url="https://example.com/b")
+        updated = services.update_saved_item(
+            saved_item=item, url="https://example.com/b"
+        )
 
         self.assertIsNone(updated.extracted_content)
         self.assertIsNone(updated.metadata)
@@ -374,7 +387,9 @@ class UpdateSavedItemExtractionLifecycleTests(TestCase):
         original_version = item.extraction_version
 
         with self.captureOnCommitCallbacks(execute=False) as callbacks:
-            updated = services.update_saved_item(saved_item=item, url="https://example.com/a", name="Renamed")
+            updated = services.update_saved_item(
+                saved_item=item, url="https://example.com/a", name="Renamed"
+            )
 
         self.assertEqual(updated.extraction_version, original_version)
         self.assertEqual(len(callbacks), 0)
@@ -384,7 +399,9 @@ class UpdateSavedItemExtractionLifecycleTests(TestCase):
         original_version = item.extraction_version
 
         with self.captureOnCommitCallbacks(execute=False) as callbacks:
-            updated = services.update_saved_item(saved_item=item, url=None, name="No URL now")
+            updated = services.update_saved_item(
+                saved_item=item, url=None, name="No URL now"
+            )
 
         self.assertNotEqual(updated.extraction_version, original_version)
         self.assertEqual(updated.extraction_status, SavedItem.ExtractionStatus.NO_URL)
@@ -403,42 +420,38 @@ class UpdateSavedItemExtractionLifecycleTests(TestCase):
 
 
 class FullExtractionRaceScenarioTests(TestCase):
-    """
-    سناریوی دقیق خودت: POST با url=A (task A صف می‌شه)، بلافاصله
-    PATCH با url=B (task B صف می‌شه)، و task A دیرتر اجرا می‌شه.
-    نتیجه‌ی A نباید نتیجه‌ی B رو overwrite کنه.
-    """
     def setUp(self):
         self.user = create_user()
 
     @patch("apps.saved_items.extraction.pipeline.parse_fetch_result")
     @patch("apps.saved_items.extraction.pipeline.fetch_url")
-    def test_late_stale_task_does_not_overwrite_newer_extraction(self, mock_fetch, mock_parse):
+    def test_late_stale_task_does_not_overwrite_newer_extraction(
+        self, mock_fetch, mock_parse
+    ):
         from apps.saved_items.extraction.parser import ParsedContent
 
-        # ۱. POST با url=A
         item = services.create_saved_item(user=self.user, url="https://example.com/a")
         version_a = str(item.extraction_version)
 
-        # ۲. بلافاصله PATCH با url=B — نسخه عوض می‌شه
         item = services.update_saved_item(saved_item=item, url="https://example.com/b")
         version_b = str(item.extraction_version)
         self.assertNotEqual(version_a, version_b)
 
-        # ۳. task B زودتر اجرا و موفق می‌شه
         mock_fetch.return_value = MagicMock()
-        mock_parse.return_value = ParsedContent(metadata={"title": "B's content"}, body_text=None)
+        mock_parse.return_value = ParsedContent(
+            metadata={"title": "B's content"}, body_text=None
+        )
         run_extraction(item.id, version_b)
 
         item.refresh_from_db()
         self.assertEqual(item.metadata["title"], "B's content")
         self.assertEqual(item.extraction_status, SavedItem.ExtractionStatus.DONE)
 
-        # ۴. task A (قدیمی، مال url=A) بالاخره دیر اجرا می‌شه
-        mock_parse.return_value = ParsedContent(metadata={"title": "A's stale content"}, body_text=None)
-        run_extraction(item.id, version_a)  # نسخه‌ی قدیمی
+        mock_parse.return_value = ParsedContent(
+            metadata={"title": "A's stale content"}, body_text=None
+        )
+        run_extraction(item.id, version_a)
 
-        # نتیجه‌ی B باید دست‌نخورده بمونه
         item.refresh_from_db()
         self.assertEqual(item.metadata["title"], "B's content")
         self.assertEqual(item.extraction_status, SavedItem.ExtractionStatus.DONE)

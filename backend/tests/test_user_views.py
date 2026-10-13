@@ -35,9 +35,7 @@ class UserViewsTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {response.data['access']}"
-        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {response.data['access']}")
 
     # ============================================================
     # Register
@@ -488,12 +486,8 @@ class UserViewsTests(APITestCase):
 
         self.user.refresh_from_db()
 
-        self.assertTrue(
-            self.user.check_password("NewStrongPassword123!")
-        )
-        self.assertFalse(
-            self.user.check_password("OldStrongPassword123!")
-        )
+        self.assertTrue(self.user.check_password("NewStrongPassword123!"))
+        self.assertFalse(self.user.check_password("OldStrongPassword123!"))
 
     def test_change_password_requires_authentication(self):
         response = self.client.put(
@@ -580,9 +574,7 @@ class UserViewsTests(APITestCase):
         access = login_response.data["access"]
         refresh = login_response.data["refresh"]
 
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {access}"
-        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
 
         response = self.client.post(
             self.logout_url,
@@ -638,4 +630,3 @@ class UserViewsTests(APITestCase):
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
         )
-

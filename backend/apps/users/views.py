@@ -1,3 +1,6 @@
+from django.conf import settings
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
 from rest_framework import status
 from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView, UpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -7,37 +10,31 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
-from django.conf import settings
-
-from google.auth.transport import requests as google_requests
-from google.oauth2 import id_token
-from google.auth.exceptions import GoogleAuthError
 
 from apps.users.models import CustomUser
 from apps.users.serializers import (
-    RegisterSerializer,
-    UserSerializer,
     ChangePasswordSerializer,
+    RegisterSerializer,
     SetPasswordSerializer,
+    UserSerializer,
 )
-
 
 """
     U, temp
 """
-import base64
-import json
+
 
 class ThrottledTokenObtainPairView(TokenObtainPairView):
     throttle_classes = [ScopedRateThrottle]
-    throttle_scope = 'auth'
+    throttle_scope = "auth"
+
 
 class RegisterView(CreateAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = (AllowAny,)
     throttle_classes = [ScopedRateThrottle]
-    throttle_scope = 'auth'
+    throttle_scope = "auth"
     authentication_classes = ()
 
     def create(self, request, *args, **kwargs):
@@ -67,10 +64,11 @@ class ProfileView(RetrieveUpdateAPIView):
 class ChangePasswordView(UpdateAPIView):
     serializer_class = ChangePasswordSerializer
     permission_classes = (IsAuthenticated,)
-    http_method_names = ['put']
+    http_method_names = ["put"]
 
     def get_object(self):
         return self.request.user
+
 
 class SetPasswordView(APIView):
     permission_classes = (IsAuthenticated,)
@@ -118,9 +116,9 @@ class LogoutView(APIView):
 class GoogleLoginView(APIView):
     permission_classes = (AllowAny,)
     throttle_classes = [ScopedRateThrottle]
-    throttle_scope = 'auth'
+    throttle_scope = "auth"
     authentication_classes = ()
-    
+
     def post(self, request):
         google_id_token = request.data.get("id_token")
 
@@ -148,7 +146,7 @@ class GoogleLoginView(APIView):
                 {"detail": "Invalid Google ID token."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-            
+
         email = id_info.get("email")
         email_verified = id_info.get("email_verified", False)
 

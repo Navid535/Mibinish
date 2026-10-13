@@ -36,9 +36,8 @@ class PurgeExpiredCompletedItemsTaskTests(TestCase):
 
     def test_deletes_item_exactly_at_retention_boundary(self):
         item = self.create_item(
-            completed_at=timezone.now() - timedelta(
-                days=self.user.completed_items_retention_days
-            ),
+            completed_at=timezone.now()
+            - timedelta(days=self.user.completed_items_retention_days),
         )
 
         deleted_count = purge_expired_completed_items()
@@ -116,4 +115,3 @@ class PurgeExpiredCompletedItemsTaskTests(TestCase):
         self.assertFalse(SavedItem.objects.filter(pk=expired_item.pk).exists())
         self.assertTrue(SavedItem.objects.filter(pk=active_item.pk).exists())
         self.assertTrue(SavedItem.objects.filter(pk=todo_item.pk).exists())
-

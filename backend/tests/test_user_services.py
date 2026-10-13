@@ -6,14 +6,14 @@ from django.utils import timezone
 from apps.users.models import CustomUser
 from apps.users.services import PremiumServiceError, activate_premium
 
+
 class ActivatePremiumTests(TestCase):
     def setUp(self):
         self.user = CustomUser.objects.create_user(
-        email="[john@example.com](mailto:john@example.com)",
-        first_name="John",
-        password="secret123",
+            email="[john@example.com](mailto:john@example.com)",
+            first_name="John",
+            password="secret123",
         )
-
 
     def test_activates_premium_for_free_user(self):
         today = timezone.localdate()
@@ -58,4 +58,3 @@ class ActivatePremiumTests(TestCase):
     def test_rejects_negative_days(self):
         with self.assertRaises(PremiumServiceError):
             activate_premium(self.user, -1)
-    

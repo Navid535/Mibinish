@@ -5,8 +5,10 @@ from django.utils import timezone
 
 from apps.users.models import CustomUser
 
+
 class PremiumServiceError(Exception):
     """Raised when a premium activation request is invalid."""
+
 
 def activate_premium(user: CustomUser, days: int) -> CustomUser:
     if days <= 0:

@@ -4,7 +4,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.saved_items.models import Category, SavedItem
+from apps.saved_items.models import SavedItem
 from apps.users.models import CustomUser
 
 
@@ -75,7 +75,6 @@ class SavedItemAPITests(APITestCase):
         )
 
         mock_delay.assert_called_once_with(item.id, str(item.extraction_version))
-
 
     def test_create_saved_item_without_url(self):
         response = self.create_item(
@@ -231,7 +230,6 @@ class SavedItemAPITests(APITestCase):
 
         mock_delay.assert_called_once_with(item.id, str(item.extraction_version))
 
-
     @patch("apps.saved_items.tasks.extract_content_task.delay")
     def test_remove_url_sets_no_url_and_does_not_queue_task(
         self,
@@ -334,9 +332,7 @@ class SavedItemAPITests(APITestCase):
         response = self.client.delete(self.detail_url(item))
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(
-            SavedItem.objects.filter(pk=item.pk).exists()
-        )
+        self.assertFalse(SavedItem.objects.filter(pk=item.pk).exists())
 
     def test_delete_other_users_item_returns_404(self):
         item = SavedItem.objects.create(
@@ -348,9 +344,7 @@ class SavedItemAPITests(APITestCase):
         response = self.client.delete(self.detail_url(item))
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertTrue(
-            SavedItem.objects.filter(pk=item.pk).exists()
-        )
+        self.assertTrue(SavedItem.objects.filter(pk=item.pk).exists())
 
     # ------------------------------------------------------------------
     # AUTHENTICATION
@@ -383,7 +377,9 @@ class SavedItemAPITests(APITestCase):
     )
     def test_create_saved_item_succeeds_even_if_broker_is_down(self, mock_delay):
         with self.captureOnCommitCallbacks(execute=True):
-            response = self.create_item(name="Resilience test", url="https://example.com/x")
+            response = self.create_item(
+                name="Resilience test", url="https://example.com/x"
+            )
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 

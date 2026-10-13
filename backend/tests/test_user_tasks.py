@@ -6,10 +6,10 @@ from django.utils import timezone
 from apps.users.models import CustomUser
 from apps.users.tasks import expire_premium_users
 
+
 class ExpirePremiumUsersTests(TestCase):
     def test_expires_users_whose_premium_ended(self):
         today = timezone.localdate()
-
 
         expired_user = CustomUser.objects.create_user(
             email="expired@example.com",
@@ -96,4 +96,3 @@ class ExpirePremiumUsersTests(TestCase):
             CustomUser.objects.filter(plan="PR").count(),
             0,
         )
-

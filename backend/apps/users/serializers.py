@@ -5,20 +5,24 @@ from rest_framework import serializers
 
 from apps.users.models import CustomUser as User
 
+
 class UserSerializer(serializers.ModelSerializer):
     has_password = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = (
-            'id', 'email', 'first_name', 'last_name', 'plan',
-            'premium_until', 'completed_items_retention_days',
-            'date_joined', 'has_password'
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "plan",
+            "premium_until",
+            "completed_items_retention_days",
+            "date_joined",
+            "has_password",
         )
-        read_only_fields = (
-            'date_joined', 'id', 'email', 'plan', 'premium_until'
-        )
-
+        read_only_fields = ("date_joined", "id", "email", "plan", "premium_until")
 
     def get_has_password(self, obj):
         return obj.has_usable_password()
@@ -28,9 +32,9 @@ class UserSerializer(serializers.ModelSerializer):
         if user is not None:
             today = timezone.localdate()
             has_active_premium = (
-                    user.plan == "PR"
-                    and user.premium_until is not None
-                    and user.premium_until >= today
+                user.plan == "PR"
+                and user.premium_until is not None
+                and user.premium_until >= today
             )
             if not has_active_premium:
                 raise serializers.ValidationError(
@@ -44,7 +48,9 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True,)
+    password = serializers.CharField(
+        write_only=True,
+    )
 
     class Meta:
         model = User
@@ -66,6 +72,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         return User.objects.create_user(
             **validated_data,
         )
+
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(write_only=True)

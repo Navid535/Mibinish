@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ValidationError
@@ -11,12 +9,13 @@ from apps.saved_items.models import Category, SavedItem, SavedItemCategory
 
 User = get_user_model()
 
+
 class CustomUserModelTests(TestCase):
     def test_create_user(self):
         user = User.objects.create_user(
-        email="john@example.com",
-        password="secret123",
-        first_name="John",
+            email="john@example.com",
+            password="secret123",
+            first_name="John",
         )
         self.assertEqual(user.email, "john@example.com")
         self.assertEqual(user.first_name, "John")
@@ -122,19 +121,19 @@ class CustomUserModelTests(TestCase):
                     first_name="Another",
                 )
 
+
 class CategoryModelTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-        email="[user@example.com](mailto:user@example.com)",
-        password="secret123",
-        first_name="John",
+            email="[user@example.com](mailto:user@example.com)",
+            password="secret123",
+            first_name="John",
         )
         self.other_user = User.objects.create_user(
-        email="[other@example.com](mailto:other@example.com)",
-        password="secret123",
-        first_name="Jane",
+            email="[other@example.com](mailto:other@example.com)",
+            password="secret123",
+            first_name="Jane",
         )
-
 
     def test_create_category(self):
         category = Category.objects.create(
@@ -273,17 +272,18 @@ class CategoryModelTests(TestCase):
 
         self.assertFalse(Category.objects.filter(pk=category_id).exists())
 
+
 class SavedItemModelTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-        email="[user@example.com](mailto:user@example.com)",
-        password="secret123",
-        first_name="John",
+            email="[user@example.com](mailto:user@example.com)",
+            password="secret123",
+            first_name="John",
         )
         self.other_user = User.objects.create_user(
-        email="[other@example.com](mailto:other@example.com)",
-        password="secret123",
-        first_name="Jane",
+            email="[other@example.com](mailto:other@example.com)",
+            password="secret123",
+            first_name="Jane",
         )
 
     def create_saved_item(self, **kwargs):
@@ -508,12 +508,13 @@ class SavedItemModelTests(TestCase):
 
         self.assertFalse(SavedItem.objects.filter(pk=item_id).exists())
 
+
 class SavedItemCategoryModelTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-        email="[user@example.com](mailto:user@example.com)",
-        password="secret123",
-        first_name="John",
+            email="[user@example.com](mailto:user@example.com)",
+            password="secret123",
+            first_name="John",
         )
 
         self.category = Category.objects.create(
@@ -683,9 +684,7 @@ class SavedItemCategoryModelTests(TestCase):
 
         self.category.delete()
 
-        self.assertFalse(
-            SavedItemCategory.objects.filter(pk=link_id).exists()
-        )
+        self.assertFalse(SavedItemCategory.objects.filter(pk=link_id).exists())
 
     def test_deleting_saved_item_deletes_links(self):
         link = self.create_link()
@@ -693,9 +692,7 @@ class SavedItemCategoryModelTests(TestCase):
 
         self.saved_item.delete()
 
-        self.assertFalse(
-            SavedItemCategory.objects.filter(pk=link_id).exists()
-        )
+        self.assertFalse(SavedItemCategory.objects.filter(pk=link_id).exists())
 
     def test_saved_item_category_str(self):
         link = self.create_link()
@@ -730,4 +727,3 @@ class SavedItemCategoryModelTests(TestCase):
             link.saved_item.user,
             link.category.user,
         )
-

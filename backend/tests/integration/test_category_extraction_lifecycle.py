@@ -11,55 +11,46 @@ from apps.users.models import CustomUser
 
 def create_user(email="user1@example.com"):
     return CustomUser.objects.create_user(
-        email=email, password="strong-pass-123", first_name="Test",
+        email=email,
+        password="strong-pass-123",
+        first_name="Test",
     )
 
 
 class CategoryExtractionLifecycleIntegrationTests(APITestCase):
-    """
-    یه آیتم واقعی رو از سر تا ته دنبال می‌کنه: ساخت category → ساخت
-    SavedItem وصل به اون category + url → اجرای واقعی زنجیره‌ی extraction
-    (فقط fetch/parse شبکه‌ای mock شده، نه pipeline خودش) → تغییر url →
-    تغییر categories. هر مرحله روی نتیجه‌ی مرحله‌ی قبل بنا می‌شه.
-    """
-
     def setUp(self):
         self.user = create_user()
         self.client.force_authenticate(self.user)
 
     def _run_queued_extraction_synchronously(self, callbacks):
-        """
-        به‌جای اتکا به broker واقعی، callback صف‌شده رو می‌گیریم و به‌جای
-        extract_content_task.delay، مستقیم خود run_extraction — همون
-        منطقی که task واقعی هم صدا می‌زنه — رو synchronous اجرا می‌کنیم.
-        این یعنی services → tasks → pipeline واقعاً با هم اجرا می‌شن،
-        فقط broker (که خودش جدا integration test #۵ رو داره) کنار می‌ره.
-        """
         from apps.saved_items.extraction.pipeline import run_extraction
 
         with patch("apps.saved_items.tasks.extract_content_task.delay") as mock_delay:
-            mock_delay.side_effect = lambda item_id, version: run_extraction(item_id, version)
+            mock_delay.side_effect = lambda item_id, version: run_extraction(
+                item_id, version
+            )
             for callback in callbacks:
                 callback()
 
     @patch("apps.saved_items.extraction.pipeline.parse_fetch_result")
     @patch("apps.saved_items.extraction.pipeline.fetch_url")
     def test_full_lifecycle_create_extract_change_url_change_categories(
-        self, mock_fetch, mock_parse,
+        self,
+        mock_fetch,
+        mock_parse,
     ):
-        # ۱. ساخت دو تا category
         cat_movies = Category.objects.create(user=self.user, name="Movies")
         cat_todo = Category.objects.create(user=self.user, name="To Watch")
 
-        # ۲. ساخت SavedItem وصل به هر دو category + url
         mock_fetch.return_value = MagicMock()
         mock_parse.return_value = ParsedContent(
-            metadata={"title": "Original Page"}, body_text="Original body",
+            metadata={"title": "Original Page"},
+            body_text="Original body",
         )
 
         with self.captureOnCommitCallbacks(execute=False) as callbacks:
             response = self.client.post(
-                reverse('saved-item-list'),
+                reverse("saved-item-list"),
                 {
                     "name": "A movie review",
                     "url": "https://example.com/review",
@@ -77,7 +68,6 @@ class CategoryExtractionLifecycleIntegrationTests(APITestCase):
         self.assertEqual(item.category_links.count(), 2)
         self.assertEqual(item.extraction_status, SavedItem.ExtractionStatus.PENDING)
 
-        # ۳. اجرای واقعی extraction
         self._run_queued_extraction_synchronously(callbacks)
 
         item.refresh_from_db()
@@ -86,14 +76,13 @@ class CategoryExtractionLifecycleIntegrationTests(APITestCase):
         self.assertEqual(item.extracted_content["body_text"], "Original body")
         self.assertEqual(item.category_links.count(), 2)  # دست‌نخورده
 
-        # ۴. تغییر url — extraction باید ریست/دوباره queue بشه،
-        #    ولی categoryها نباید تحت تأثیر قرار بگیرن
         mock_parse.return_value = ParsedContent(
-            metadata={"title": "New Page"}, body_text="New body",
+            metadata={"title": "New Page"},
+            body_text="New body",
         )
         with self.captureOnCommitCallbacks(execute=False) as callbacks:
             response = self.client.patch(
-                reverse('saved-item-detail', args=[item_id]),
+                reverse("saved-item-detail", args=[item_id]),
                 {"url": "https://example.com/new-review"},
                 format="json",
             )
@@ -112,9 +101,8 @@ class CategoryExtractionLifecycleIntegrationTests(APITestCase):
         self.assertEqual(item.metadata["title"], "New Page")
         self.assertEqual(item.extracted_content["body_text"], "New body")
 
-        # ۵. تغییر categories (بدون تغییر url) — نباید extraction رو ریست کنه
         response = self.client.patch(
-            reverse('saved-item-detail', args=[item_id]),
+            reverse("saved-item-detail", args=[item_id]),
             {"categories": [{"category": cat_movies.id, "priority": 1}]},
             format="json",
         )
@@ -123,7 +111,7 @@ class CategoryExtractionLifecycleIntegrationTests(APITestCase):
         item.refresh_from_db()
         self.assertEqual(item.category_links.count(), 1)
         self.assertEqual(item.category_links.first().category, cat_movies)
-        self.assertEqual(item.extraction_status, SavedItem.ExtractionStatus.DONE)  # دست‌نخورده
+        self.assertEqual(item.extraction_status, SavedItem.ExtractionStatus.DONE)
         self.assertEqual(item.metadata["title"], "New Page")
 
     def test_cannot_attach_other_users_category_during_full_flow(self):
@@ -131,7 +119,7 @@ class CategoryExtractionLifecycleIntegrationTests(APITestCase):
         other_category = Category.objects.create(user=other_user, name="Not yours")
 
         response = self.client.post(
-            reverse('saved-item-list'),
+            reverse("saved-item-list"),
             {
                 "name": "Test",
                 "url": "https://example.com/test",
@@ -151,7 +139,7 @@ class CategoryExtractionLifecycleIntegrationTests(APITestCase):
 
         with self.captureOnCommitCallbacks(execute=False) as callbacks:
             response = self.client.post(
-                reverse('saved-item-list'),
+                reverse("saved-item-list"),
                 {
                     "name": "Broken link",
                     "url": "https://broken.example.com",
@@ -165,16 +153,17 @@ class CategoryExtractionLifecycleIntegrationTests(APITestCase):
 
         item = SavedItem.objects.get(pk=item_id)
         self.assertEqual(item.extraction_status, SavedItem.ExtractionStatus.FAILED)
-        # حتی با شکست extraction، ساخت category link موفق بوده
         self.assertEqual(item.category_links.count(), 1)
         self.assertEqual(item.category_links.first().category, cat)
 
     def test_deleting_category_removes_link_but_not_the_saved_item(self):
         cat = Category.objects.create(user=self.user, name="Temp")
-        item = SavedItem.objects.create(user=self.user, name="Keep me", url="https://example.com/x")
+        item = SavedItem.objects.create(
+            user=self.user, name="Keep me", url="https://example.com/x"
+        )
         SavedItemCategory.objects.create(saved_item=item, category=cat, priority=1)
 
-        response = self.client.delete(reverse('category-detail', args=[cat.id]))
+        response = self.client.delete(reverse("category-detail", args=[cat.id]))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
         item.refresh_from_db()

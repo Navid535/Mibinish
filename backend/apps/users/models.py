@@ -2,6 +2,7 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+
 class UserManager(BaseUserManager):
     def _create_user(self, email, password, first_name, **extra_fields):
         if not email:
@@ -58,7 +59,6 @@ class CustomUser(AbstractUser):
 
     class Meta:
         ordering = ["first_name", "last_name", "email"]
-
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["first_name"]

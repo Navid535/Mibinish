@@ -5,7 +5,6 @@ from rest_framework.exceptions import ValidationError
 from apps.saved_items.models import SavedItem
 from apps.saved_items.services import (
     FREE_ITEM_LIMIT,
-    PREMIUM_ITEM_LIMIT,
     create_saved_item,
 )
 

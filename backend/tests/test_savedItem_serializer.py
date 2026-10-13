@@ -1,15 +1,16 @@
 from django.test import TestCase
-from django.utils import timezone
 
-from apps.saved_items.models import Category, SavedItem, SavedItemCategory
-from apps.saved_items.serializers import CategorySerializer, SavedItemSerializer
 from apps.saved_items import services
+from apps.saved_items.models import Category, SavedItem
+from apps.saved_items.serializers import CategorySerializer, SavedItemSerializer
 from apps.users.models import CustomUser
 
 
 def create_user(email, first_name="Test"):
     return CustomUser.objects.create_user(
-        email=email, password="strong-pass-123", first_name=first_name,
+        email=email,
+        password="strong-pass-123",
+        first_name=first_name,
     )
 
 
@@ -64,7 +65,8 @@ class SavedItemSerializerValidationTests(TestCase):
 
     def test_only_name_passes(self):
         serializer = SavedItemSerializer(
-            data={"name": "Some item"}, context=self.context1,
+            data={"name": "Some item"},
+            context=self.context1,
         )
         self.assertTrue(serializer.is_valid(), serializer.errors)
         item = serializer.save()
@@ -73,7 +75,8 @@ class SavedItemSerializerValidationTests(TestCase):
 
     def test_only_url_passes(self):
         serializer = SavedItemSerializer(
-            data={"url": "https://example.com"}, context=self.context1,
+            data={"url": "https://example.com"},
+            context=self.context1,
         )
         self.assertTrue(serializer.is_valid(), serializer.errors)
         item = serializer.save()
@@ -176,8 +179,10 @@ class SavedItemSerializerStatusTests(TestCase):
         self.assertIsNone(item.completed_at)
 
         serializer = SavedItemSerializer(
-            item, data={"status": SavedItem.Status.COMPLETED},
-            partial=True, context=self.context1,
+            item,
+            data={"status": SavedItem.Status.COMPLETED},
+            partial=True,
+            context=self.context1,
         )
         self.assertTrue(serializer.is_valid(), serializer.errors)
         updated = serializer.save()
@@ -185,13 +190,17 @@ class SavedItemSerializerStatusTests(TestCase):
 
     def test_update_completed_to_to_do_clears_completed_at(self):
         item = services.create_saved_item(
-            user=self.user1, name="Test", status=SavedItem.Status.COMPLETED,
+            user=self.user1,
+            name="Test",
+            status=SavedItem.Status.COMPLETED,
         )
         self.assertIsNotNone(item.completed_at)
 
         serializer = SavedItemSerializer(
-            item, data={"status": SavedItem.Status.TO_DO},
-            partial=True, context=self.context1,
+            item,
+            data={"status": SavedItem.Status.TO_DO},
+            partial=True,
+            context=self.context1,
         )
         self.assertTrue(serializer.is_valid(), serializer.errors)
         updated = serializer.save()
@@ -207,13 +216,17 @@ class SavedItemSerializerCategorySyncTests(TestCase):
 
     def test_update_without_categories_keeps_existing(self):
         item = services.create_saved_item(
-            user=self.user1, name="Test",
+            user=self.user1,
+            name="Test",
             category_links=[{"category": self.cat_a, "priority": 1}],
         )
         self.assertEqual(item.category_links.count(), 1)
 
         serializer = SavedItemSerializer(
-            item, data={"name": "Updated"}, partial=True, context=self.context1,
+            item,
+            data={"name": "Updated"},
+            partial=True,
+            context=self.context1,
         )
         self.assertTrue(serializer.is_valid(), serializer.errors)
         updated = serializer.save()
@@ -222,11 +235,15 @@ class SavedItemSerializerCategorySyncTests(TestCase):
 
     def test_update_with_empty_categories_removes_all(self):
         item = services.create_saved_item(
-            user=self.user1, name="Test",
+            user=self.user1,
+            name="Test",
             category_links=[{"category": self.cat_a, "priority": 1}],
         )
         serializer = SavedItemSerializer(
-            item, data={"categories": []}, partial=True, context=self.context1,
+            item,
+            data={"categories": []},
+            partial=True,
+            context=self.context1,
         )
         self.assertTrue(serializer.is_valid(), serializer.errors)
         updated = serializer.save()
@@ -234,13 +251,15 @@ class SavedItemSerializerCategorySyncTests(TestCase):
 
     def test_update_with_new_categories_syncs(self):
         item = services.create_saved_item(
-            user=self.user1, name="Test",
+            user=self.user1,
+            name="Test",
             category_links=[{"category": self.cat_a, "priority": 1}],
         )
         serializer = SavedItemSerializer(
             item,
             data={"categories": [{"category": self.cat_b.id, "priority": 2}]},
-            partial=True, context=self.context1,
+            partial=True,
+            context=self.context1,
         )
         self.assertTrue(serializer.is_valid(), serializer.errors)
         updated = serializer.save()

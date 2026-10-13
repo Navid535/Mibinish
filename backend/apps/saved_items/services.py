@@ -1,10 +1,9 @@
-import uuid
 import logging
+import uuid
 
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
-
 
 from apps.saved_items.extraction.parser import derive_source
 from apps.saved_items.models import SavedItem, SavedItemCategory
@@ -32,17 +31,20 @@ def _check_item_limit(user):
             f"You have reached your limit of {item_limit} saved items."
         )
 
+
 @transaction.atomic
 def create_saved_item(*, user, category_links=None, **fields):
     _check_item_limit(user)
 
-    if not fields.get('url'):
-        fields['extraction_status'] = SavedItem.ExtractionStatus.NO_URL
+    if not fields.get("url"):
+        fields["extraction_status"] = SavedItem.ExtractionStatus.NO_URL
     else:
-        fields['source'] = derive_source(fields['url'])
+        fields["source"] = derive_source(fields["url"])
 
-    status = fields.get('status', SavedItem.Status.TO_DO)
-    fields['completed_at'] = timezone.now() if status == SavedItem.Status.COMPLETED else None
+    status = fields.get("status", SavedItem.Status.TO_DO)
+    fields["completed_at"] = (
+        timezone.now() if status == SavedItem.Status.COMPLETED else None
+    )
 
     saved_item = SavedItem.objects.create(user=user, **fields)
     _sync_categories(saved_item, category_links or [])
@@ -55,23 +57,23 @@ def create_saved_item(*, user, category_links=None, **fields):
 
 @transaction.atomic
 def update_saved_item(*, saved_item, category_links=None, **fields):
-    if 'status' in fields and fields['status'] != saved_item.status:
-        fields['completed_at'] = (
-            timezone.now() if fields['status'] == SavedItem.Status.COMPLETED else None
+    if "status" in fields and fields["status"] != saved_item.status:
+        fields["completed_at"] = (
+            timezone.now() if fields["status"] == SavedItem.Status.COMPLETED else None
         )
 
-    url_changed = 'url' in fields and fields['url'] != saved_item.url
+    url_changed = "url" in fields and fields["url"] != saved_item.url
     if url_changed:
-        fields['extraction_version'] = uuid.uuid4()
-        if fields['url']:
-            fields['source'] = derive_source(fields['url'])
-            fields['extraction_status'] = SavedItem.ExtractionStatus.PENDING
+        fields["extraction_version"] = uuid.uuid4()
+        if fields["url"]:
+            fields["source"] = derive_source(fields["url"])
+            fields["extraction_status"] = SavedItem.ExtractionStatus.PENDING
         else:
-            fields['source'] = ''
-            fields['extraction_status'] = SavedItem.ExtractionStatus.NO_URL
-        fields['extracted_content'] = None
-        fields['metadata'] = None
-        fields['extraction_error'] = None
+            fields["source"] = ""
+            fields["extraction_status"] = SavedItem.ExtractionStatus.NO_URL
+        fields["extracted_content"] = None
+        fields["metadata"] = None
+        fields["extraction_error"] = None
 
     for field, value in fields.items():
         setattr(saved_item, field, value)
@@ -99,7 +101,8 @@ def _queue_extraction(saved_item):
                 "Failed to queue extraction task for SavedItem %s", saved_item.id
             )
             SavedItem.objects.filter(
-                pk=saved_item.id, extraction_version=version,
+                pk=saved_item.id,
+                extraction_version=version,
             ).update(
                 extraction_status=SavedItem.ExtractionStatus.FAILED,
                 extraction_error="Could not queue extraction task (broker unavailable)",
@@ -107,13 +110,16 @@ def _queue_extraction(saved_item):
 
     transaction.on_commit(_delay)
 
+
 def _sync_categories(saved_item, category_links):
     saved_item.category_links.all().delete()
-    SavedItemCategory.objects.bulk_create([
-        SavedItemCategory(
-            saved_item=saved_item,
-            category=link['category'],
-            priority=link.get('priority', 1),
-        )
-        for link in category_links
-    ])
+    SavedItemCategory.objects.bulk_create(
+        [
+            SavedItemCategory(
+                saved_item=saved_item,
+                category=link["category"],
+                priority=link.get("priority", 1),
+            )
+            for link in category_links
+        ]
+    )

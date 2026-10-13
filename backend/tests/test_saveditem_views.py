@@ -78,9 +78,7 @@ class CategoryCRUDTests(APITestCase):
             name="A",
         )
 
-        response = self.client.get(
-            reverse("category-detail", args=[category.id])
-        )
+        response = self.client.get(reverse("category-detail", args=[category.id]))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["name"], "A")
@@ -108,18 +106,14 @@ class CategoryCRUDTests(APITestCase):
             name="A",
         )
 
-        response = self.client.delete(
-            reverse("category-detail", args=[category.id])
-        )
+        response = self.client.delete(reverse("category-detail", args=[category.id]))
 
         self.assertEqual(
             response.status_code,
             status.HTTP_204_NO_CONTENT,
         )
 
-        self.assertFalse(
-            Category.objects.filter(id=category.id).exists()
-        )
+        self.assertFalse(Category.objects.filter(id=category.id).exists())
 
 
 class SavedItemCRUDTests(APITestCase):
@@ -199,9 +193,7 @@ class SavedItemCRUDTests(APITestCase):
             name="A",
         )
 
-        response = self.client.get(
-            reverse("saved-item-detail", args=[item.id])
-        )
+        response = self.client.get(reverse("saved-item-detail", args=[item.id]))
 
         self.assertEqual(
             response.status_code,
@@ -235,25 +227,19 @@ class SavedItemCRUDTests(APITestCase):
             name="A",
         )
 
-        response = self.client.delete(
-            reverse("saved-item-detail", args=[item.id])
-        )
+        response = self.client.delete(reverse("saved-item-detail", args=[item.id]))
 
         self.assertEqual(
             response.status_code,
             status.HTTP_204_NO_CONTENT,
         )
 
-        self.assertFalse(
-            SavedItem.objects.filter(id=item.id).exists()
-        )
+        self.assertFalse(SavedItem.objects.filter(id=item.id).exists())
 
 
 class UnauthenticatedAccessTests(APITestCase):
     def test_category_list_requires_authentication(self):
-        response = self.client.get(
-            reverse("category-list")
-        )
+        response = self.client.get(reverse("category-list"))
 
         self.assertEqual(
             response.status_code,
@@ -272,9 +258,7 @@ class UnauthenticatedAccessTests(APITestCase):
         )
 
     def test_category_retrieve_requires_authentication(self):
-        response = self.client.get(
-            reverse("category-detail", args=[1])
-        )
+        response = self.client.get(reverse("category-detail", args=[1]))
 
         self.assertEqual(
             response.status_code,
@@ -293,9 +277,7 @@ class UnauthenticatedAccessTests(APITestCase):
         )
 
     def test_category_delete_requires_authentication(self):
-        response = self.client.delete(
-            reverse("category-detail", args=[1])
-        )
+        response = self.client.delete(reverse("category-detail", args=[1]))
 
         self.assertEqual(
             response.status_code,
@@ -303,9 +285,7 @@ class UnauthenticatedAccessTests(APITestCase):
         )
 
     def test_saved_item_list_requires_authentication(self):
-        response = self.client.get(
-            reverse("saved-item-list")
-        )
+        response = self.client.get(reverse("saved-item-list"))
 
         self.assertEqual(
             response.status_code,
@@ -324,9 +304,7 @@ class UnauthenticatedAccessTests(APITestCase):
         )
 
     def test_saved_item_retrieve_requires_authentication(self):
-        response = self.client.get(
-            reverse("saved-item-detail", args=[1])
-        )
+        response = self.client.get(reverse("saved-item-detail", args=[1]))
 
         self.assertEqual(
             response.status_code,
@@ -345,9 +323,7 @@ class UnauthenticatedAccessTests(APITestCase):
         )
 
     def test_saved_item_delete_requires_authentication(self):
-        response = self.client.delete(
-            reverse("saved-item-detail", args=[1])
-        )
+        response = self.client.delete(reverse("saved-item-detail", args=[1]))
 
         self.assertEqual(
             response.status_code,
@@ -378,14 +354,9 @@ class CrossUserOwnershipTests(APITestCase):
             name="Theirs",
         )
 
-        response = self.client.get(
-            reverse("category-list")
-        )
+        response = self.client.get(reverse("category-list"))
 
-        names = [
-            category["name"]
-            for category in response.data["results"]
-        ]
+        names = [category["name"] for category in response.data["results"]]
 
         self.assertEqual(names, ["Mine"])
 
@@ -399,14 +370,9 @@ class CrossUserOwnershipTests(APITestCase):
             name="Theirs",
         )
 
-        response = self.client.get(
-            reverse("saved-item-list")
-        )
+        response = self.client.get(reverse("saved-item-list"))
 
-        names = [
-            item["name"]
-            for item in response.data["results"]
-        ]
+        names = [item["name"] for item in response.data["results"]]
 
         self.assertEqual(names, ["Mine"])
 
@@ -416,9 +382,7 @@ class CrossUserOwnershipTests(APITestCase):
             name="Theirs",
         )
 
-        response = self.client.get(
-            reverse("category-detail", args=[category.id])
-        )
+        response = self.client.get(reverse("category-detail", args=[category.id]))
 
         self.assertEqual(
             response.status_code,
@@ -451,18 +415,14 @@ class CrossUserOwnershipTests(APITestCase):
             name="Theirs",
         )
 
-        response = self.client.delete(
-            reverse("category-detail", args=[category.id])
-        )
+        response = self.client.delete(reverse("category-detail", args=[category.id]))
 
         self.assertEqual(
             response.status_code,
             status.HTTP_404_NOT_FOUND,
         )
 
-        self.assertTrue(
-            Category.objects.filter(id=category.id).exists()
-        )
+        self.assertTrue(Category.objects.filter(id=category.id).exists())
 
     def test_retrieve_other_users_saved_item_returns_404(self):
         item = SavedItem.objects.create(
@@ -470,9 +430,7 @@ class CrossUserOwnershipTests(APITestCase):
             name="Theirs",
         )
 
-        response = self.client.get(
-            reverse("saved-item-detail", args=[item.id])
-        )
+        response = self.client.get(reverse("saved-item-detail", args=[item.id]))
 
         self.assertEqual(
             response.status_code,
@@ -505,18 +463,14 @@ class CrossUserOwnershipTests(APITestCase):
             name="Theirs",
         )
 
-        response = self.client.delete(
-            reverse("saved-item-detail", args=[item.id])
-        )
+        response = self.client.delete(reverse("saved-item-detail", args=[item.id]))
 
         self.assertEqual(
             response.status_code,
             status.HTTP_404_NOT_FOUND,
         )
 
-        self.assertTrue(
-            SavedItem.objects.filter(id=item.id).exists()
-        )
+        self.assertTrue(SavedItem.objects.filter(id=item.id).exists())
 
     def test_cannot_attach_other_users_category_to_saved_item(self):
         other_category = Category.objects.create(
@@ -543,9 +497,7 @@ class CrossUserOwnershipTests(APITestCase):
             status.HTTP_400_BAD_REQUEST,
         )
 
-        self.assertFalse(
-            SavedItem.objects.filter(name="Test").exists()
-        )
+        self.assertFalse(SavedItem.objects.filter(name="Test").exists())
 
 
 class PayloadOverrideProtectionTests(APITestCase):
@@ -572,9 +524,7 @@ class PayloadOverrideProtectionTests(APITestCase):
             status.HTTP_201_CREATED,
         )
 
-        item = SavedItem.objects.get(
-            id=response.data["id"]
-        )
+        item = SavedItem.objects.get(id=response.data["id"])
 
         self.assertEqual(item.user, self.user1)
 
@@ -616,9 +566,7 @@ class PayloadOverrideProtectionTests(APITestCase):
             status.HTTP_201_CREATED,
         )
 
-        item = SavedItem.objects.get(
-            id=response.data["id"]
-        )
+        item = SavedItem.objects.get(id=response.data["id"])
 
         self.assertIsNone(item.extracted_content)
 
@@ -639,9 +587,7 @@ class PayloadOverrideProtectionTests(APITestCase):
             status.HTTP_201_CREATED,
         )
 
-        item = SavedItem.objects.get(
-            id=response.data["id"]
-        )
+        item = SavedItem.objects.get(id=response.data["id"])
 
         self.assertIsNone(item.metadata)
 
@@ -797,14 +743,9 @@ class SavedItemPaginationTests(APITestCase):
         self.assertEqual(response.data["count"], 25)
         self.assertEqual(len(response.data["results"]), 20)
 
-        returned_names = [
-            item["name"]
-            for item in response.data["results"]
-        ]
+        returned_names = [item["name"] for item in response.data["results"]]
 
-        self.assertTrue(
-            all(name.startswith("Mine") for name in returned_names)
-        )
+        self.assertTrue(all(name.startswith("Mine") for name in returned_names))
 
 
 class SavedItemFilterTests(APITestCase):
@@ -880,10 +821,7 @@ class SavedItemFilterTests(APITestCase):
         )
 
     def get_names(self, response):
-        return {
-            item["name"]
-            for item in response.data["results"]
-        }
+        return {item["name"] for item in response.data["results"]}
 
     def test_filter_by_status(self):
         response = self.client.get(
@@ -1106,10 +1044,7 @@ class SavedItemSearchTests(APITestCase):
         )
 
     def get_names(self, response):
-        return {
-            item["name"]
-            for item in response.data["results"]
-        }
+        return {item["name"] for item in response.data["results"]}
 
     def test_search_by_name(self):
         response = self.client.get(
@@ -1261,27 +1196,19 @@ class SavedItemFilterTests(APITestCase):
 
         # auto_now_add ignores manually supplied created_at during create().
         # Set deterministic timestamps explicitly after creation.
-        SavedItem.objects.filter(
-            pk=self.completed_old.pk
-        ).update(
+        SavedItem.objects.filter(pk=self.completed_old.pk).update(
             created_at=now - timedelta(days=10)
         )
 
-        SavedItem.objects.filter(
-            pk=self.completed_recent.pk
-        ).update(
+        SavedItem.objects.filter(pk=self.completed_recent.pk).update(
             created_at=now - timedelta(days=2)
         )
 
-        SavedItem.objects.filter(
-            pk=self.todo_programming.pk
-        ).update(
+        SavedItem.objects.filter(pk=self.todo_programming.pk).update(
             created_at=now - timedelta(days=5)
         )
 
-        SavedItem.objects.filter(
-            pk=self.todo_reddit.pk
-        ).update(
+        SavedItem.objects.filter(pk=self.todo_reddit.pk).update(
             created_at=now - timedelta(days=1)
         )
 
@@ -1301,10 +1228,8 @@ class SavedItemFilterTests(APITestCase):
         )
 
     def get_names(self, response):
-        return {
-            item["name"]
-            for item in response.data["results"]
-        }
+        return {item["name"] for item in response.data["results"]}
+
 
 class SavedItemCombinedQueryTests(APITestCase):
     def setUp(self):
@@ -1367,10 +1292,7 @@ class SavedItemCombinedQueryTests(APITestCase):
         self.assertEqual(response.data["count"], 15)
         self.assertEqual(len(response.data["results"]), 5)
 
-        names = [
-            item["name"]
-            for item in response.data["results"]
-        ]
+        names = [item["name"] for item in response.data["results"]]
 
         self.assertEqual(
             names,
@@ -1404,10 +1326,7 @@ class SavedItemCombinedQueryTests(APITestCase):
         self.assertEqual(response.data["count"], 15)
         self.assertEqual(len(response.data["results"]), 5)
 
-        names = [
-            item["name"]
-            for item in response.data["results"]
-        ]
+        names = [item["name"] for item in response.data["results"]]
 
         self.assertEqual(
             names,
@@ -1458,10 +1377,7 @@ class SavedItemCombinedQueryTests(APITestCase):
             status.HTTP_200_OK,
         )
 
-        names = {
-            item["name"]
-            for item in response.data["results"]
-        }
+        names = {item["name"] for item in response.data["results"]}
 
         self.assertNotIn(
             "Game Article Secret",
@@ -1472,4 +1388,3 @@ class SavedItemCombinedQueryTests(APITestCase):
             response.data["count"],
             15,
         )
-

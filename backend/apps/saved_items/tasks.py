@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 from celery import shared_task
@@ -7,6 +8,8 @@ from apps.saved_items.extraction.pipeline import run_extraction
 from apps.saved_items.models import SavedItem
 from apps.users.models import CustomUser
 
+logger = logging.getLogger(__name__)
+
 
 @shared_task
 def purge_expired_completed_items() -> int:
@@ -14,9 +17,8 @@ def purge_expired_completed_items() -> int:
     total_deleted = 0
 
     retention_days_values = (
-        CustomUser.objects
-        .filter(saved_items__status=SavedItem.Status.COMPLETED)
-        .values_list('completed_items_retention_days', flat=True)
+        CustomUser.objects.filter(saved_items__status=SavedItem.Status.COMPLETED)
+        .values_list("completed_items_retention_days", flat=True)
         .distinct()
     )
 

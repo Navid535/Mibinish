@@ -61,7 +61,9 @@ def fetch_url(url: str) -> FetchResult:
                 location = response.headers.get("Location")
                 response.close()
                 if not location:
-                    raise FetchError(f"Redirect with no Location header from {current_url}")
+                    raise FetchError(
+                        f"Redirect with no Location header from {current_url}"
+                    )
                 current_url = urljoin(current_url, location)
                 continue
 
@@ -78,7 +80,9 @@ def fetch_url(url: str) -> FetchResult:
 
 def _read_body(response: requests.Response, current_url: str) -> FetchResult:
     content_type_header = response.headers.get("Content-Type", "")
-    content_type = content_type_header.split(";")[0].strip().lower() or "application/octet-stream"
+    content_type = (
+        content_type_header.split(";")[0].strip().lower() or "application/octet-stream"
+    )
     charset = None
     for part in content_type_header.split(";")[1:]:
         part = part.strip()
@@ -94,7 +98,9 @@ def _read_body(response: requests.Response, current_url: str) -> FetchResult:
                     f"Response body from {current_url} exceeds {MAX_CONTENT_BYTES} bytes limit"
                 )
     except requests.RequestException as exc:
-        raise FetchError(f"Error while reading response body from {current_url}: {exc}") from exc
+        raise FetchError(
+            f"Error while reading response body from {current_url}: {exc}"
+        ) from exc
     finally:
         response.close()
 

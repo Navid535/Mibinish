@@ -1,17 +1,16 @@
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.shortcuts import render
-
 from unfold.admin import ModelAdmin
 from unfold.forms import (
+    AdminPasswordChangeForm,
     UserChangeForm,
     UserCreationForm,
-    AdminPasswordChangeForm,
 )
 
 from apps.users.forms import ActivatePremiumForm
 from apps.users.models import CustomUser
-from apps.users.services import activate_premium, PremiumServiceError
+from apps.users.services import PremiumServiceError, activate_premium
 
 
 @admin.register(CustomUser)
@@ -20,96 +19,114 @@ class CustomUserAdmin(BaseUserAdmin, ModelAdmin):
     add_form = UserCreationForm
     change_password_form = AdminPasswordChangeForm
 
-    ordering = ('first_name', 'last_name', 'email')
+    ordering = ("first_name", "last_name", "email")
 
     list_display = (
-        'email',
-        'first_name',
-        'last_name',
-        'plan',
-        'premium_until',
-        'is_staff',
-        'is_active',
+        "email",
+        "first_name",
+        "last_name",
+        "plan",
+        "premium_until",
+        "is_staff",
+        "is_active",
     )
 
     list_filter = (
-        'plan',
-        'is_staff',
-        'is_superuser',
-        'is_active',
+        "plan",
+        "is_staff",
+        "is_superuser",
+        "is_active",
     )
 
     search_fields = (
-        'email',
-        'first_name',
-        'last_name',
+        "email",
+        "first_name",
+        "last_name",
     )
 
     readonly_fields = (
-        'last_login',
-        'date_joined',
+        "last_login",
+        "date_joined",
     )
 
     fieldsets = (
-        (None, {
-            'fields': (
-                'email',
-                'password',
-            )
-        }),
-        ('Personal info', {
-            'fields': (
-                'first_name',
-                'last_name',
-            )
-        }),
-        ('Plan', {
-            'fields': (
-                'plan',
-                'premium_until',
-                'completed_items_retention_days',
-            )
-        }),
-        ('Permissions', {
-            'fields': (
-                'is_active',
-                'is_staff',
-                'is_superuser',
-                'groups',
-                'user_permissions',
-            ),
-        }),
-        ('Important dates', {
-            'fields': (
-                'last_login',
-                'date_joined',
-            ),
-        }),
+        (
+            None,
+            {
+                "fields": (
+                    "email",
+                    "password",
+                )
+            },
+        ),
+        (
+            "Personal info",
+            {
+                "fields": (
+                    "first_name",
+                    "last_name",
+                )
+            },
+        ),
+        (
+            "Plan",
+            {
+                "fields": (
+                    "plan",
+                    "premium_until",
+                    "completed_items_retention_days",
+                )
+            },
+        ),
+        (
+            "Permissions",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                ),
+            },
+        ),
+        (
+            "Important dates",
+            {
+                "fields": (
+                    "last_login",
+                    "date_joined",
+                ),
+            },
+        ),
     )
 
     add_fieldsets = (
-        (None, {
-            'classes': ('wide',),
-            'fields': (
-                'email',
-                'first_name',
-                'password1',
-                'password2',
-            ),
-        }),
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": (
+                    "email",
+                    "first_name",
+                    "password1",
+                    "password2",
+                ),
+            },
+        ),
     )
 
     actions = [
-        'activate_premium_action',
+        "activate_premium_action",
     ]
 
     @admin.action(description="Activate/renew premium for selected users")
     def activate_premium_action(self, request, queryset):
-        if 'apply' in request.POST:
+        if "apply" in request.POST:
             form = ActivatePremiumForm(request.POST)
 
             if form.is_valid():
-                days = form.cleaned_data['days']
+                days = form.cleaned_data["days"]
                 succeeded = 0
                 errors = []
 
@@ -137,17 +154,15 @@ class CustomUserAdmin(BaseUserAdmin, ModelAdmin):
                 return None
 
         form = ActivatePremiumForm(
-            initial={
-                '_selected_action': queryset.values_list('pk', flat=True)
-            }
+            initial={"_selected_action": queryset.values_list("pk", flat=True)}
         )
 
         return render(
             request,
-            'admin/users/activate_premium.html',
+            "admin/users/activate_premium.html",
             {
-                'users': queryset,
-                'form': form,
-                'opts': self.model._meta,
+                "users": queryset,
+                "form": form,
+                "opts": self.model._meta,
             },
         )

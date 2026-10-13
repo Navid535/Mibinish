@@ -19,7 +19,9 @@ def run_extraction(saved_item_id: int, expected_version: str) -> None:
     try:
         saved_item = SavedItem.objects.get(pk=saved_item_id)
     except SavedItem.DoesNotExist:
-        logger.warning("SavedItem %s no longer exists; skipping extraction", saved_item_id)
+        logger.warning(
+            "SavedItem %s no longer exists; skipping extraction", saved_item_id
+        )
         return
 
     if str(saved_item.extraction_version) != expected_version:
@@ -40,16 +42,18 @@ def run_extraction(saved_item_id: int, expected_version: str) -> None:
         return
     except Exception:  # noqa: BLE001
         logger.exception("Unexpected extraction error for SavedItem %s", saved_item_id)
-        _mark_failed(saved_item_id, "Unexpected error during extraction", expected_version)
+        _mark_failed(
+            saved_item_id, "Unexpected error during extraction", expected_version
+        )
         return
 
     _mark_done(saved_item_id, parsed, expected_version)
 
 
-
 def _mark_processing(saved_item_id: int, expected_version: str) -> None:
     SavedItem.objects.filter(
-        pk=saved_item_id, extraction_version=expected_version,
+        pk=saved_item_id,
+        extraction_version=expected_version,
     ).update(
         extraction_status=SavedItem.ExtractionStatus.PROCESSING,
         extraction_error=None,
@@ -58,7 +62,8 @@ def _mark_processing(saved_item_id: int, expected_version: str) -> None:
 
 def _mark_no_url(saved_item_id: int, expected_version: str) -> None:
     SavedItem.objects.filter(
-        pk=saved_item_id, extraction_version=expected_version,
+        pk=saved_item_id,
+        extraction_version=expected_version,
     ).update(
         extraction_status=SavedItem.ExtractionStatus.NO_URL,
         extraction_error=None,
@@ -67,16 +72,20 @@ def _mark_no_url(saved_item_id: int, expected_version: str) -> None:
 
 def _mark_failed(saved_item_id: int, error_message: str, expected_version: str) -> None:
     SavedItem.objects.filter(
-        pk=saved_item_id, extraction_version=expected_version,
+        pk=saved_item_id,
+        extraction_version=expected_version,
     ).update(
         extraction_status=SavedItem.ExtractionStatus.FAILED,
         extraction_error=error_message[:1000],
     )
 
 
-def _mark_done(saved_item_id: int, parsed: ParsedContent, expected_version: str) -> None:
+def _mark_done(
+    saved_item_id: int, parsed: ParsedContent, expected_version: str
+) -> None:
     SavedItem.objects.filter(
-        pk=saved_item_id, extraction_version=expected_version,
+        pk=saved_item_id,
+        extraction_version=expected_version,
     ).update(
         extraction_status=SavedItem.ExtractionStatus.DONE,
         extraction_error=None,

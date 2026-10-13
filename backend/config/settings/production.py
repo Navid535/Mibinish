@@ -1,8 +1,7 @@
 import environ
 import sentry_sdk
-
-from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
+from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
 from .base import *  # noqa: F403
@@ -18,14 +17,6 @@ DATABASES = {
 }
 DATABASES["default"]["CONN_MAX_AGE"] = 60
 
-# ---------------------------------------------------------------------
-# HTTPS / امنیت شبکه
-# ---------------------------------------------------------------------
-
-# چون پشت nginx (یا هر reverse proxy دیگه) هستیم، TLS اونجا terminate
-# می‌شه و درخواست به Django به‌صورت http داخلی می‌رسه. این هدر بهمون
-# می‌گه که "اصل" درخواست https بوده، وگرنه SECURE_SSL_REDIRECT و
-# چک‌های امنیتی دیگه فکر می‌کنن همه‌چیز http‌ه.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
@@ -35,18 +26,15 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
 
-# HSTS: اول با یه مقدار کوچیک شروع کن (مثلاً یه روز)، بعد از این‌که
-# مطمئن شدی HTTPS همه‌جا درست کار می‌کنه، بزرگش کن (یه ماه، بعد یه سال).
-# اگه اشتباهی خیلی زود مقدار بزرگ بذاری و بعد بخوای HTTPS رو خاموش کنی،
-# مرورگرهایی که قبلاً این هدر رو دیدن تا مدت‌ها اصلاً اجازه‌ی http نمی‌دن.
 SECURE_HSTS_SECONDS = env.int("DJANGO_SECURE_HSTS_SECONDS", default=86400)
-SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False)
-SECURE_HSTS_PRELOAD = False  # فقط بعد از اطمینان کامل از HTTPS فعالش کن
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool(
+    "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False
+)
+SECURE_HSTS_PRELOAD = False
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
-# Static files (Whitenoise)
-MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")  # بعد از SecurityMiddleware
+MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGES = {
@@ -83,12 +71,11 @@ LOGGING = {
     },
 }
 
-ADMINS = [
-    tuple(pair.split(":", 1))
-    for pair in env.list("DJANGO_ADMINS", default=[])
-]
+ADMINS = [tuple(pair.split(":", 1)) for pair in env.list("DJANGO_ADMINS", default=[])]
 
-EMAIL_BACKEND = env("DJANGO_EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
+EMAIL_BACKEND = env(
+    "DJANGO_EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend"
+)
 EMAIL_HOST = env("DJANGO_EMAIL_HOST", default="")
 EMAIL_PORT = env.int("DJANGO_EMAIL_PORT", default=587)
 EMAIL_HOST_USER = env("DJANGO_EMAIL_HOST_USER", default="")

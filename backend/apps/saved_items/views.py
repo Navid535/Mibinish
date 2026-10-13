@@ -17,11 +17,15 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class SavedItemViewSet(viewsets.ModelViewSet):
     serializer_class = SavedItemSerializer
     permission_classes = (permissions.IsAuthenticated,)
-    filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
+    filter_backends = (
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    )
     filterset_class = SavedItemFilter
-    search_fields = ('name', 'url', 'source')
-    ordering_fields = ('created_at', 'completed_at', 'name')
-    ordering = ('-created_at',)
+    search_fields = ("name", "url", "source")
+    ordering_fields = ("created_at", "completed_at", "name")
+    ordering = ("-created_at",)
 
     def get_queryset(self):
         return SavedItem.objects.visible_to(self.request.user)

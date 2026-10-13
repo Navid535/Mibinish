@@ -93,7 +93,9 @@ def _decode(fetch_result: FetchResult) -> str:
     return fetch_result.content.decode("utf-8", errors="replace")
 
 
-def _meta_content(soup, *, property_name: str | None = None, name: str | None = None) -> str | None:
+def _meta_content(
+    soup, *, property_name: str | None = None, name: str | None = None
+) -> str | None:
     attrs = {"property": property_name} if property_name else {"name": name}
     tag = soup.find("meta", attrs=attrs)
     if tag and tag.get("content"):
@@ -112,9 +114,8 @@ def _extract_metadata(soup, final_url: str) -> dict:
         or _meta_content(soup, name="twitter:description")
         or _meta_content(soup, name="description")
     )
-    image = (
-        _meta_content(soup, property_name="og:image")
-        or _meta_content(soup, name="twitter:image")
+    image = _meta_content(soup, property_name="og:image") or _meta_content(
+        soup, name="twitter:image"
     )
     site_name = _meta_content(soup, property_name="og:site_name")
 

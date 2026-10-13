@@ -4,7 +4,11 @@ from django.test import TestCase
 from django.utils import timezone
 
 from apps.users.models import CustomUser
-from apps.users.serializers import RegisterSerializer, UserSerializer, ChangePasswordSerializer
+from apps.users.serializers import (
+    ChangePasswordSerializer,
+    RegisterSerializer,
+    UserSerializer,
+)
 
 
 class RegisterSerializerTests(TestCase):
@@ -15,7 +19,6 @@ class RegisterSerializerTests(TestCase):
             "last_name": "Doe",
             "password": "secret123terces",
         }
-
 
         serializer = RegisterSerializer(data=data)
 
@@ -123,10 +126,10 @@ class RegisterSerializerTests(TestCase):
 class UserSerializerTests(TestCase):
     def setUp(self):
         self.user = CustomUser.objects.create_user(
-        email="john@example.com",
-        first_name="John",
-        last_name="Doe",
-        password="secret123terces",
+            email="john@example.com",
+            first_name="John",
+            last_name="Doe",
+            password="secret123terces",
         )
 
     def test_serializes_user(self):
@@ -172,19 +175,19 @@ class UserSerializerTests(TestCase):
         self.assertIsNone(self.user.premium_until)
         self.assertEqual(self.user.first_name, "Jane")
 
+
 class ChangePasswordSerializerTests(TestCase):
     def setUp(self):
         self.user = CustomUser.objects.create_user(
-        email="john@example.com",
-        first_name="John",
-        password="oldpassword123",
+            email="john@example.com",
+            first_name="John",
+            password="oldpassword123",
         )
         self.request = type(
-        "Request",
-        (),
-        {"user": self.user},
+            "Request",
+            (),
+            {"user": self.user},
         )()
-
 
     def test_changes_password(self):
         serializer = ChangePasswordSerializer(
@@ -231,24 +234,42 @@ class ChangePasswordSerializerTests(TestCase):
         self.user.plan = "FR"
         self.user.premium_until = None
         self.user.save(update_fields=["plan", "premium_until"])
-        serializer = UserSerializer(self.user, data={"completed_items_retention_days": 30}, partial=True, )
+        serializer = UserSerializer(
+            self.user,
+            data={"completed_items_retention_days": 30},
+            partial=True,
+        )
         self.assertFalse(serializer.is_valid())
-        self.assertIn("completed_items_retention_days", serializer.errors, )
+        self.assertIn(
+            "completed_items_retention_days",
+            serializer.errors,
+        )
 
     def test_active_premium_user_can_change_retention_days(self):
         self.user.plan = "PR"
         self.user.premium_until = timezone.localdate() + timedelta(days=30)
         self.user.save(update_fields=["plan", "premium_until"])
-        serializer = UserSerializer(self.user, data={"completed_items_retention_days": 30}, partial=True, )
+        serializer = UserSerializer(
+            self.user,
+            data={"completed_items_retention_days": 30},
+            partial=True,
+        )
         self.assertTrue(serializer.is_valid())
 
     def test_expired_premium_user_cannot_change_retention_days(self):
         self.user.plan = "PR"
         self.user.premium_until = timezone.localdate() - timedelta(days=1)
         self.user.save(update_fields=["plan", "premium_until"])
-        serializer = UserSerializer(self.user, data={"completed_items_retention_days": 30}, partial=True, )
+        serializer = UserSerializer(
+            self.user,
+            data={"completed_items_retention_days": 30},
+            partial=True,
+        )
         self.assertFalse(serializer.is_valid())
-        self.assertIn("completed_items_retention_days", serializer.errors, )
+        self.assertIn(
+            "completed_items_retention_days",
+            serializer.errors,
+        )
 
     def test_retention_days_must_be_between_1_and_31(self):
         self.user.plan = "PR"
@@ -270,6 +291,8 @@ class ChangePasswordSerializerTests(TestCase):
         self.user.premium_until = timezone.localdate()
         self.user.save(update_fields=["plan", "premium_until"])
         serializer = UserSerializer(
-            self.user, data={"completed_items_retention_days": 30}, partial=True,
+            self.user,
+            data={"completed_items_retention_days": 30},
+            partial=True,
         )
         self.assertTrue(serializer.is_valid(), serializer.errors)
