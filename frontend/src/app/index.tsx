@@ -236,7 +236,6 @@ export default function HomeScreen() {
     );
   };
 
-  // منتظر ماندن برای لود کامل فونت‌ها
   if (!fontsLoaded) {
     return null;
   }
@@ -452,12 +451,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   brandIcon: {
-    width: 28,
+    width: 33,
     height: 28,
-    // borderRadius: 3,
+    borderRadius: 3,
   },
   logo: {
-    fontSize: 20,
+    fontSize: 22,
     color: '#1C1C1E',
     fontFamily: 'Pacifico_400Regular',
     paddingVertical: 8,

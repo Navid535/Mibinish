@@ -6,16 +6,22 @@ from rest_framework import serializers
 from apps.users.models import CustomUser as User
 
 class UserSerializer(serializers.ModelSerializer):
+    has_password = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = (
             'id', 'email', 'first_name', 'last_name', 'plan',
             'premium_until', 'completed_items_retention_days',
-            'date_joined'
+            'date_joined', 'has_password'
         )
         read_only_fields = (
             'date_joined', 'id', 'email', 'plan', 'premium_until'
         )
+
+
+    def get_has_password(self, obj):
+        return obj.has_usable_password()
 
     def validate_completed_items_retention_days(self, value):
         user = self.instance
@@ -79,4 +85,28 @@ class ChangePasswordSerializer(serializers.Serializer):
         user = self.context["request"].user
         user.set_password(self.validated_data["new_password"])
         user.save()
+        return user
+
+
+class SetPasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(write_only=True)
+
+    def validate_new_password(self, value):
+        validate_password(value, user=self.context["request"].user)
+        return value
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+
+        if user.has_usable_password():
+            raise serializers.ValidationError(
+                "You already have a password. Use change password instead."
+            )
+
+        return attrs
+
+    def save(self):
+        user = self.context["request"].user
+        user.set_password(self.validated_data["new_password"])
+        user.save(update_fields=["password"])
         return user

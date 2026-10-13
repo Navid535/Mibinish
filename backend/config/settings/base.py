@@ -14,7 +14,7 @@ ADMIN_URL = env("DJANGO_ADMIN_URL", default="admin/")
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
-
+GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", default="")
 
 INSTALLED_APPS = [
     "unfold",

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
 
+import { signInWithGoogle, signOutFromGoogle } from '../api/googleAuth';
 import { login as apiLogin, register as apiRegister, logout as apiLogout } from '../api/auth';
 import { setSessionExpiredHandler } from '../api/client';
 
@@ -10,6 +11,7 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, firstName: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  loginWithGoogle: () => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,12 +45,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    await apiLogout();
-    setIsAuthenticated(false);
+    try {
+      await apiLogout();
+    } finally {
+      await signOutFromGoogle();
+      setIsAuthenticated(false);
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    const result = await signInWithGoogle();
+    if (!result) return false;
+    setIsAuthenticated(true);
+    return true;
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, register, logout, loginWithGoogle }}>
       {children}
     </AuthContext.Provider>
   );

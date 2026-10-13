@@ -89,3 +89,6 @@ frontend/pnpm-debug.log*
 # =========================
 
 *.log
+
+# =========================
+PROJECT_OVERVIEW.md

@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
-import { changePassword, fetchProfile, updateRetentionDays } from '@/api/profile';
+import { changePassword, fetchProfile, setPassword, updateRetentionDays } from '@/api/profile';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -72,23 +72,29 @@ export function ProfileModal({ visible, onClose }: Props) {
     }
   };
 
-  const handleChangePassword = async () => {
-    if (!oldPassword || !newPassword) {
-      setPasswordMessage('Fill in both fields.');
+  const handlePasswordSubmit = async () => {
+    const hadPassword = profile.has_password;
+    if (!newPassword || (hadPassword && !oldPassword)) {
+      setPasswordMessage('Fill in all fields.');
       return;
     }
     setPasswordBusy(true);
     setPasswordMessage('');
     try {
-      await changePassword(oldPassword, newPassword);
+      if (hadPassword) {
+        await changePassword(oldPassword, newPassword);
+      } else {
+        await setPassword(newPassword);
+        setProfile({ ...profile, has_password: true });
+      }
       setOldPassword('');
       setNewPassword('');
-      setPasswordMessage('Password changed successfully.');
+      setPasswordMessage(hadPassword ? 'Password changed.' : 'Password set.');
     } catch (err: any) {
-      setPasswordMessage(getErrorMessage(err, 'Could not change password.'));
+      setPasswordMessage(getErrorMessage(err, 'Could not update password.'));
     } finally {
       setPasswordBusy(false);
-    }
+    } 
   };
 
   return (
@@ -176,35 +182,39 @@ export function ProfileModal({ visible, onClose }: Props) {
                   )}
                 </Card>
 
-                {/* Password Change */}
                 <Card style={styles.card}>
-                  <View style={styles.cardHeader}>
-                    <Ionicons name="key-outline" size={20} color={Colors.light.darkRed} />
-                    <ThemedText style={styles.cardTitle}>Change Password</ThemedText>
-                  </View>
+                      
+                  <ThemedText type="small" style={styles.cardTitle}>
+                    {profile.has_password ? 'Change password' : 'Set a password'}
+                  </ThemedText>
 
-                  <View style={styles.inputGroup}>
+                  {profile.has_password ? (
                     <TextInput
                       placeholder="Current password"
                       secureTextEntry
                       value={oldPassword}
                       onChangeText={setOldPassword}
                     />
-                    <TextInput
-                      placeholder="New password"
-                      secureTextEntry
-                      value={newPassword}
-                      onChangeText={setNewPassword}
-                    />
-                    {passwordMessage ? (
-                      <ThemedText style={styles.helper}>{passwordMessage}</ThemedText>
-                    ) : null}
-                    <Button
-                      title={passwordBusy ? 'Updating Password…' : 'Update Password'}
-                      onPress={handleChangePassword}
-                      disabled={passwordBusy}
-                    />
-                  </View>
+                  ) : (
+                    <ThemedText style={styles.helper}>
+                      You signed in with Google. Set a password if you also want to log in with your email.
+                    </ThemedText>
+                  )}
+
+                  <TextInput
+                    placeholder="New password"
+                    secureTextEntry
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                  />
+
+                  {passwordMessage ? <ThemedText style={styles.helper}>{passwordMessage}</ThemedText> : null}
+
+                  <Button
+                    title={passwordBusy ? 'Saving…' : profile.has_password ? 'Change password' : 'Set password'}
+                    onPress={handlePasswordSubmit}
+                    disabled={passwordBusy}
+                  />
                 </Card>
 
                 {/* Logout Button */}

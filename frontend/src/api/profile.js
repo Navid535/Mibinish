@@ -12,6 +12,10 @@ export async function updateRetentionDays(days) {
   return data;
 }
 
+export async function setPassword(newPassword) {
+  await apiClient.post('/auth/me/set-password/', { new_password: newPassword });
+}
+
 export async function changePassword(oldPassword, newPassword) {
   await apiClient.put('/auth/me/change-password/', {
     old_password: oldPassword,

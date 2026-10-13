@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Mibinish",
-    "slug": "mibinish",
+    "slug": "frontend",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -48,7 +48,10 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "@react-native-google-signin/google-signin"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -63,10 +66,10 @@
               "appExtensions": [
                 {
                   "targetName": "ShareExtension",
-                  "bundleIdentifier": "undefined.share-extension",
+                  "bundleIdentifier": "com.navid535.mibinish.share-extension",
                   "entitlements": {
                     "com.apple.security.application-groups": [
-                      "group.undefined"
+                      "group.com.navid535.mibinish"
                     ]
                   }
                 }
@@ -76,6 +79,7 @@
         },
         "projectId": "b976e9e0-7f81-4ef2-9757-42b5cc13c7da"
       }
-    }
+    },
+    "owner": "mavid535"
   }
 }

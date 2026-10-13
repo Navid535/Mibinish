@@ -1,9 +1,11 @@
-export function getErrorMessage(
-  err: any,
-  fallback = 'Something went wrong. Please try again.',
-): string {
-  if (!err?.response) {
+export function getErrorMessage(err: any, fallback = 'Something went wrong. Please try again.'): string {
+  if (err?.isAxiosError && !err.response) {
     return 'No connection. Check your internet and try again.';
+  }
+
+  if (!err?.response) {
+    console.warn('Non-HTTP error:', err);
+    return fallback;
   }
 
   const status = err.response.status;
@@ -13,15 +15,10 @@ export function getErrorMessage(
     return 'Server error. Please try again in a moment.';
   }
 
-  if (Array.isArray(data) && data.length > 0) {
-    return String(data[0]);
-  }
-
   if (data && typeof data === 'object') {
     const firstFieldError = Object.values(data).find(
       (value) => Array.isArray(value) && value.length > 0,
     ) as string[] | undefined;
-
     if (firstFieldError) return String(firstFieldError[0]);
 
     if (data.detail) return String(data.detail);
